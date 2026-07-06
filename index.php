@@ -61,6 +61,13 @@ $routes = [
     ['POST', '/admin/media/upload',     'admin_media_upload'],
     ['POST', '/admin/media/delete',     'admin_media_delete'],
 
+    ['GET',  '/admin/templates',        'admin_templates'],
+    ['POST', '/admin/templates/save',   'admin_template_save'],
+    ['POST', '/admin/templates/activate','admin_template_activate'],
+    ['POST', '/admin/templates/delete', 'admin_template_delete'],
+    ['GET',  '/admin/templates/export/{id}', 'admin_template_export'],
+    ['POST', '/admin/templates/import', 'admin_template_import'],
+
     ['GET',  '/admin/users',            'admin_users'],
     ['POST', '/admin/users/save',       'admin_user_save'],
     ['POST', '/admin/users/delete',     'admin_user_delete'],

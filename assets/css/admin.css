@@ -247,6 +247,28 @@ select.input { cursor: pointer; }
 .featured-preview img { width: 100%; height: 100%; object-fit: cover; }
 .featured-preview.empty span { color: var(--ink-3); font-size: .85rem; }
 
+/* ---- Templates ---- */
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; margin-bottom: 24px; }
+.tpl-card { overflow: hidden; transition: .18s; }
+.tpl-card.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(109 91 250 / .15), var(--shadow); }
+.tpl-preview { padding: 18px 18px 12px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
+.tpl-mini {
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 10px rgb(20 20 35 / .08);
+}
+.tpl-aa { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+.tpl-bar { height: 8px; border-radius: 999px; flex: 1; }
+.tpl-swatches { display: flex; gap: 6px; }
+.tpl-swatches span { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgb(0 0 0 / .08); }
+.tpl-body { padding: 14px 16px 16px; display: grid; gap: 4px; }
+.tpl-title { display: flex; align-items: center; gap: 8px; }
+.tpl-body > .muted { font-size: .78rem; }
+.tpl-actions { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.tpl-form-panel { max-width: 640px; }
+.tpl-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.tpl-form-grid .span-2 { grid-column: span 2; }
+input[type=range].input { padding: 0; height: 42px; accent-color: var(--accent); border: 0; box-shadow: none; }
+
 /* ---- Menu manager ---- */
 .menu-columns { display: grid; gap: 20px; align-content: start; }
 .menu-list { list-style: none; padding: 8px; display: grid; gap: 6px; }

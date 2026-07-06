@@ -27,6 +27,7 @@ Az adatbázis (`storage/cms.sqlite`) az első betöltéskor automatikusan létre
 | **Oldalak** | Statikus oldalak, menübe sorolás, sorrend |
 | **Kategóriák** | Szín, leírás, inline szerkesztés |
 | **Menük** | Fejléc- és láblécmenü, drag & drop sorrendezés, gyorsválasztó oldalakból/kategóriákból, külső linkek, új lapon nyitás |
+| **Sablonok** | Dizájnsablonok (színek, betűtípusok, lekerekítés) élő előnézettel, 5 gyári sablon, aktiválás/másolás, **JSON export/import** |
 | **Médiatár** | Drag & drop feltöltés, automatikus WebP bélyegkép, URL másolás, képválasztó modal |
 | **Felhasználók** | Admin / szerkesztő szerepkörök, jelszókezelés |
 | **Beállítások** | Oldalnév, szlogen, meta leírás, lapozás, lábléc |

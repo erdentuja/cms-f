@@ -125,6 +125,59 @@ function reading_time(string $html): int {
     return max(1, (int)ceil($words / 200));
 }
 
+/* ---------- Dizájnsablonok ---------- */
+
+function template_fonts(): array {
+    return ['Sora', 'Inter', 'Space Grotesk', 'Manrope', 'Poppins', 'DM Sans', 'Playfair Display', 'Lora'];
+}
+
+function template_defaults(): array {
+    return [
+        'accent' => '#6d5bfa', 'accent2' => '#f43f8e',
+        'bg' => '#fbfaf8', 'surface' => '#ffffff', 'ink' => '#16161d',
+        'radius' => 18,
+        'font_display' => 'Sora', 'font_body' => 'Inter',
+    ];
+}
+
+/** Sablonadatok szigorú validálása (importnál és kirajzolásnál is fut) */
+function template_sanitize(array $in): array {
+    $def = template_defaults();
+    $out = [];
+    foreach (['accent', 'accent2', 'bg', 'surface', 'ink'] as $k) {
+        $v = (string)($in[$k] ?? '');
+        $out[$k] = preg_match('/^#[0-9a-fA-F]{6}$/', $v) ? strtolower($v) : $def[$k];
+    }
+    $out['radius'] = min(32, max(0, (int)($in['radius'] ?? $def['radius'])));
+    foreach (['font_display', 'font_body'] as $k) {
+        $v = (string)($in[$k] ?? '');
+        $out[$k] = in_array($v, template_fonts(), true) ? $v : $def[$k];
+    }
+    return $out;
+}
+
+/** Az aktív sablon adatai (kérésenként gyorsítótárazva) */
+function active_template(): array {
+    static $tpl = null;
+    if ($tpl === null) {
+        $data = [];
+        if ($id = (int)setting('active_template')) {
+            $st = db()->prepare('SELECT data FROM templates WHERE id=?');
+            $st->execute([$id]);
+            if ($row = $st->fetch()) $data = json_decode($row['data'], true) ?: [];
+        }
+        $tpl = template_sanitize($data);
+    }
+    return $tpl;
+}
+
+/** Google Fonts link href az aktív sablon betűtípusaihoz */
+function template_fonts_href(array $tpl): string {
+    $fams = array_unique([$tpl['font_display'], $tpl['font_body']]);
+    $parts = array_map(fn($f) => 'family=' . str_replace(' ', '+', $f) . ':wght@400;500;600;700;800', $fams);
+    return 'https://fonts.googleapis.com/css2?' . implode('&', $parts) . '&display=swap';
+}
+
 function json_out(array $data, int $code = 200): never {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');

@@ -38,6 +38,25 @@ function db_migrate(PDO $db): void {
         }
         $db->exec("INSERT INTO settings (key, value) VALUES ('menu_seeded','1')");
     }
+
+    $db->exec("CREATE TABLE IF NOT EXISTS templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        data TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    )");
+    if (!(int)$db->query('SELECT COUNT(*) FROM templates')->fetchColumn()) {
+        $presets = [
+            ['Aurora', ['accent'=>'#6d5bfa','accent2'=>'#f43f8e','bg'=>'#fbfaf8','surface'=>'#ffffff','ink'=>'#16161d','radius'=>18,'font_display'=>'Sora','font_body'=>'Inter']],
+            ['Smaragd', ['accent'=>'#10b981','accent2'=>'#0ea5e9','bg'=>'#f6faf8','surface'=>'#ffffff','ink'=>'#132019','radius'=>14,'font_display'=>'Space Grotesk','font_body'=>'Inter']],
+            ['Naplemente', ['accent'=>'#f97316','accent2'=>'#e11d48','bg'=>'#fdf9f4','surface'=>'#ffffff','ink'=>'#201613','radius'=>22,'font_display'=>'Poppins','font_body'=>'DM Sans']],
+            ['Tinta', ['accent'=>'#2563eb','accent2'=>'#7c3aed','bg'=>'#f5f7fb','surface'=>'#ffffff','ink'=>'#101623','radius'=>10,'font_display'=>'Manrope','font_body'=>'Inter']],
+            ['Rozé', ['accent'=>'#be185d','accent2'=>'#9333ea','bg'=>'#fdf7f9','surface'=>'#ffffff','ink'=>'#22131b','radius'=>20,'font_display'=>'Playfair Display','font_body'=>'Lora']],
+        ];
+        $st = $db->prepare('INSERT INTO templates (name, data) VALUES (?,?)');
+        foreach ($presets as [$name, $data]) $st->execute([$name, json_encode($data)]);
+        $db->exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('active_template','1')");
+    }
 }
 
 function db_install(PDO $db): void {

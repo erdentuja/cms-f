@@ -19,8 +19,26 @@
 <link rel="alternate" type="application/rss+xml" title="<?= e(setting('site_name')) ?> RSS" href="<?= base_url('rss.xml') ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<?php $tpl = active_template(); ?>
+<link href="<?= e(template_fonts_href($tpl)) ?>" rel="stylesheet">
 <link rel="stylesheet" href="<?= base_url('assets/css/front.css') ?>?v=1">
+<style>
+:root {
+    --accent: <?= $tpl['accent'] ?>;
+    --accent-2: <?= $tpl['accent2'] ?>;
+    --bg: <?= $tpl['bg'] ?>;
+    --surface: <?= $tpl['surface'] ?>;
+    --ink: <?= $tpl['ink'] ?>;
+    --radius: <?= $tpl['radius'] ?>px;
+    --font-display: '<?= $tpl['font_display'] ?>', system-ui, sans-serif;
+    --font-body: '<?= $tpl['font_body'] ?>', system-ui, sans-serif;
+}
+html[data-theme="dark"] {
+    --accent: <?= $tpl['accent'] ?>;
+    --accent-2: <?= $tpl['accent2'] ?>;
+    --bg: #101017; --surface: #191922; --ink: #f0eff4;
+}
+</style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
 <script>
 (function () {

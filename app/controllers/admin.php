@@ -370,6 +370,104 @@ function admin_media_delete(): void {
     redirect('admin/media');
 }
 
+/* ---------- Templates ---------- */
+
+function admin_templates(): void {
+    require_admin();
+    $tpls = db()->query('SELECT * FROM templates ORDER BY id')->fetchAll();
+    foreach ($tpls as &$t) $t['tpl'] = template_sanitize(json_decode($t['data'], true) ?: []);
+    admin_render('templates', [
+        'title' => 'Sablonok',
+        'tpls' => $tpls,
+        'activeId' => (int)setting('active_template'),
+    ]);
+}
+
+function admin_template_save(): void {
+    require_admin();
+    csrf_verify();
+    $id = (int)($_POST['id'] ?? 0);
+    $name = trim((string)($_POST['name'] ?? ''));
+    if ($name === '') { flash_set('error', 'A sablon nevének megadása kötelező.'); redirect('admin/templates'); }
+    $data = json_encode(template_sanitize($_POST));
+    if ($id) {
+        db()->prepare('UPDATE templates SET name=?, data=? WHERE id=?')->execute([$name, $data, $id]);
+    } else {
+        db()->prepare('INSERT INTO templates (name, data) VALUES (?,?)')->execute([$name, $data]);
+    }
+    flash_set('success', 'Sablon mentve.');
+    redirect('admin/templates');
+}
+
+function admin_template_activate(): void {
+    require_admin();
+    csrf_verify();
+    $id = (int)($_POST['id'] ?? 0);
+    $st = db()->prepare('SELECT name FROM templates WHERE id=?');
+    $st->execute([$id]);
+    if ($name = $st->fetchColumn()) {
+        db()->prepare("INSERT INTO settings (key, value) VALUES ('active_template',?)
+                       ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute([(string)$id]);
+        flash_set('success', "A(z) „{$name}” sablon mostantól aktív.");
+    }
+    redirect('admin/templates');
+}
+
+function admin_template_delete(): void {
+    require_admin();
+    csrf_verify();
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id === (int)setting('active_template')) {
+        flash_set('error', 'Az aktív sablon nem törölhető — előbb aktiválj egy másikat.');
+        redirect('admin/templates');
+    }
+    db()->prepare('DELETE FROM templates WHERE id=?')->execute([$id]);
+    flash_set('success', 'Sablon törölve.');
+    redirect('admin/templates');
+}
+
+function admin_template_export(string $id): void {
+    require_admin();
+    $st = db()->prepare('SELECT * FROM templates WHERE id=?');
+    $st->execute([(int)$id]);
+    $t = $st->fetch();
+    if (!$t) { http_response_code(404); exit('A sablon nem található.'); }
+    $payload = [
+        'aurora_template' => 1,
+        'name' => $t['name'],
+        'data' => template_sanitize(json_decode($t['data'], true) ?: []),
+        'exported_at' => date('c'),
+    ];
+    header('Content-Type: application/json; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . slugify($t['name']) . '-sablon.json"');
+    echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function admin_template_import(): void {
+    require_admin();
+    csrf_verify();
+    if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        flash_set('error', 'A fájl feltöltése sikertelen.');
+        redirect('admin/templates');
+    }
+    if ($_FILES['file']['size'] > 64 * 1024) {
+        flash_set('error', 'A sablonfájl túl nagy.');
+        redirect('admin/templates');
+    }
+    $json = json_decode((string)file_get_contents($_FILES['file']['tmp_name']), true);
+    if (!is_array($json) || empty($json['aurora_template']) || !is_array($json['data'] ?? null)) {
+        flash_set('error', 'Érvénytelen sablonfájl — Aurora CMS sablon JSON-t tölts fel.');
+        redirect('admin/templates');
+    }
+    $name = trim((string)($json['name'] ?? '')) ?: 'Importált sablon';
+    $name = mb_substr($name, 0, 60);
+    db()->prepare('INSERT INTO templates (name, data) VALUES (?,?)')
+        ->execute([$name . ' (importált)', json_encode(template_sanitize($json['data']))]);
+    flash_set('success', "A(z) „{$name}” sablon importálva.");
+    redirect('admin/templates');
+}
+
 /* ---------- Users ---------- */
 
 function admin_users(): void {
