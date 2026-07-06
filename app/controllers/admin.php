@@ -287,10 +287,58 @@ function admin_menu_reorder(): void {
 
 /* ---------- Media ---------- */
 
+/** Hol szerepel az egyes médiafájlok? [media_id => [['type','id','title','where'], …]] */
+function media_usages(array $items): array {
+    $posts = db()->query('SELECT id, title, content, featured_image FROM posts')->fetchAll();
+    $pages = db()->query('SELECT id, title, content, blocks FROM pages')->fetchAll();
+    $map = [];
+    foreach ($items as $m) {
+        $needle = $m['path'];
+        $jsonNeedle = str_replace('/', '\\/', $needle); // a blocks JSON escape-eli a perjeleket
+        $u = [];
+        foreach ($posts as $p) {
+            $where = [];
+            if ($p['featured_image'] === $needle) $where[] = 'kiemelt kép';
+            if ($p['content'] && str_contains($p['content'], $needle)) $where[] = 'tartalom';
+            if ($where) $u[] = ['type' => 'post', 'id' => (int)$p['id'], 'title' => $p['title'], 'where' => implode(', ', $where)];
+        }
+        foreach ($pages as $p) {
+            $where = [];
+            if ($p['content'] && str_contains($p['content'], $needle)) $where[] = 'tartalom';
+            $blocks = $p['blocks'] ?? '';
+            if ($blocks && (str_contains($blocks, $needle) || str_contains($blocks, $jsonNeedle))) $where[] = 'blokk';
+            if ($where) $u[] = ['type' => 'page', 'id' => (int)$p['id'], 'title' => $p['title'], 'where' => implode(', ', $where)];
+        }
+        $map[(int)$m['id']] = $u;
+    }
+    return $map;
+}
+
 function admin_media(): void {
     require_login();
     $items = db()->query('SELECT m.*, u.name AS uploader FROM media m LEFT JOIN users u ON u.id=m.user_id ORDER BY m.created_at DESC')->fetchAll();
-    admin_render('media', ['title' => 'Médiatár', 'items' => $items]);
+    $usages = media_usages($items);
+    $orphans = count(array_filter($items, fn($m) => empty($usages[(int)$m['id']])));
+    admin_render('media', ['title' => 'Médiatár', 'items' => $items, 'usages' => $usages, 'orphans' => $orphans]);
+}
+
+/** Sehol sem használt fájlok törlése (szerveroldalon újraszámolva) */
+function admin_media_orphans_delete(): void {
+    require_login();
+    csrf_verify();
+    $items = db()->query('SELECT * FROM media')->fetchAll();
+    $usages = media_usages($items);
+    $n = 0;
+    foreach ($items as $m) {
+        if (!empty($usages[(int)$m['id']])) continue;
+        foreach ([$m['path'], $m['thumb']] as $p) {
+            if ($p && is_file(APP_ROOT . '/' . $p)) @unlink(APP_ROOT . '/' . $p);
+        }
+        db()->prepare('DELETE FROM media WHERE id=?')->execute([(int)$m['id']]);
+        $n++;
+    }
+    flash_set('success', $n ? "{$n} árva fájl törölve." : 'Nem volt törölhető árva fájl.');
+    redirect('admin/media');
 }
 
 function admin_media_list(): void {

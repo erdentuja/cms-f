@@ -61,6 +61,7 @@ $routes = [
     ['GET',  '/admin/media/list',       'admin_media_list'],
     ['POST', '/admin/media/upload',     'admin_media_upload'],
     ['POST', '/admin/media/delete',     'admin_media_delete'],
+    ['POST', '/admin/media/delete-orphans', 'admin_media_orphans_delete'],
 
     ['GET',  '/admin/templates',        'admin_templates'],
     ['POST', '/admin/templates/save',   'admin_template_save'],

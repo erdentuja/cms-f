@@ -216,6 +216,7 @@ select.input { cursor: pointer; }
 .badge-green { background: rgb(24 160 88 / .12); color: var(--green); }
 .badge-gray { background: #ececf2; color: var(--ink-2); }
 .badge-purple { background: var(--accent-soft); color: var(--accent); }
+.badge-orange { background: rgb(245 158 11 / .16); color: #b45309; }
 .cat-dot { display: inline-flex; align-items: center; gap: 7px; }
 .cat-dot::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--accent)); }
 
@@ -351,6 +352,17 @@ input[type=range].input { padding: 0; height: 42px; accent-color: var(--accent);
 .dropzone.dragover { border-color: var(--accent); background: var(--accent-soft); }
 .upload-progress { width: 100%; max-width: 380px; height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 8px; }
 .upload-progress div { height: 100%; width: 0; background: linear-gradient(90deg, #6d5bfa, #f43f8e); transition: width .2s; }
+
+.media-toolbar { max-width: none; align-items: center; flex-wrap: wrap; }
+.media-toolbar .input { max-width: 320px; }
+.seg { display: flex; gap: 6px; }
+.seg .btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.usage { margin-top: 6px; }
+.usage summary { cursor: pointer; list-style: none; user-select: none; }
+.usage summary::-webkit-details-marker { display: none; }
+.usage-list { list-style: none; margin-top: 8px; display: grid; gap: 6px; font-size: .78rem; line-height: 1.4; }
+.usage-list .muted { display: block; }
+.media-item .badge { font-size: .7rem; }
 
 .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
 .media-item {

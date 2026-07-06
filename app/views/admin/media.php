@@ -1,7 +1,7 @@
 <header class="page-head">
     <div>
         <h1>Médiatár</h1>
-        <p class="muted"><?= count($items) ?> fájl</p>
+        <p class="muted"><?= count($items) ?> fájl<?= $orphans ? ', ebből ' . $orphans . ' nem használt' : '' ?></p>
     </div>
     <label class="btn btn-primary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
@@ -17,9 +17,28 @@
     <div class="upload-progress" id="uploadProgress" hidden><div></div></div>
 </div>
 
+<?php if ($items): ?>
+<div class="toolbar media-toolbar">
+    <input class="input" type="search" id="mediaSearch" placeholder="Keresés fájlnév szerint…">
+    <div class="seg" id="mediaFilters">
+        <button class="btn btn-ghost btn-sm active" type="button" data-filter="all">Mind</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-filter="used">Használt</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-filter="orphan">Árva</button>
+    </div>
+    <?php if ($orphans): ?>
+    <form method="post" action="<?= base_url('admin/media/delete-orphans') ?>"
+          data-confirm="Törlöd mind a(z) <?= $orphans ?> árva fájlt? Ez nem visszavonható.">
+        <?= csrf_field() ?>
+        <button class="btn btn-ghost danger btn-sm" type="submit">Árvák törlése (<?= $orphans ?>)</button>
+    </form>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <div class="media-grid" id="mediaGrid">
-    <?php foreach ($items as $m): ?>
-    <figure class="media-item" data-id="<?= (int)$m['id'] ?>">
+    <?php foreach ($items as $m): $u = $usages[(int)$m['id']] ?? []; ?>
+    <figure class="media-item" data-id="<?= (int)$m['id'] ?>"
+            data-name="<?= e(mb_strtolower($m['filename'])) ?>" data-used="<?= $u ? 1 : 0 ?>">
         <?php if (str_starts_with($m['mime'], 'image/')): ?>
             <img src="<?= base_url(e($m['thumb'] ?: $m['path'])) ?>" alt="<?= e($m['filename']) ?>" loading="lazy">
         <?php else: ?>
@@ -28,6 +47,21 @@
         <figcaption>
             <strong title="<?= e($m['filename']) ?>"><?= e($m['filename']) ?></strong>
             <span class="muted"><?= human_size((int)$m['size']) ?><?= $m['width'] ? ' · ' . $m['width'] . '×' . $m['height'] : '' ?></span>
+            <?php if ($u): ?>
+            <details class="usage">
+                <summary><span class="badge badge-green"><?= count($u) ?> helyen használt</span></summary>
+                <ul class="usage-list">
+                    <?php foreach ($u as $x): ?>
+                    <li>
+                        <a class="link" href="<?= base_url(($x['type'] === 'post' ? 'admin/posts/' : 'admin/pages/') . $x['id']) ?>"><?= e($x['title']) ?></a>
+                        <span class="muted">(<?= $x['type'] === 'post' ? 'poszt' : 'oldal' ?> — <?= e($x['where']) ?>)</span>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+            </details>
+            <?php else: ?>
+            <span class="badge badge-orange" title="Sehol sem szerepel a tartalmakban">Nem használt</span>
+            <?php endif; ?>
         </figcaption>
         <div class="media-actions">
             <button class="icon-btn" type="button" title="URL másolása" data-copy="<?= base_url(e($m['path'])) ?>">
@@ -54,7 +88,36 @@
 </div>
 <?php endif; ?>
 
+<p class="muted pad" id="noMatch" hidden>Nincs a szűrésnek megfelelő fájl.</p>
+
 <script>
 window.CMS_BASE = <?= json_encode(base_url('/')) ?>;
 window.CSRF = <?= json_encode(csrf_token()) ?>;
+
+// Kliensoldali keresés + használat szerinti szűrés
+(function () {
+    const search = document.getElementById('mediaSearch');
+    const filters = document.getElementById('mediaFilters');
+    if (!search) return;
+    let filter = 'all';
+    function apply() {
+        const q = search.value.trim().toLowerCase();
+        let visible = 0;
+        document.querySelectorAll('.media-item').forEach(it => {
+            const okQ = !q || it.dataset.name.includes(q);
+            const okF = filter === 'all' || (filter === 'used') === (it.dataset.used === '1');
+            it.hidden = !(okQ && okF);
+            if (!it.hidden) visible++;
+        });
+        document.getElementById('noMatch').hidden = visible > 0;
+    }
+    search.addEventListener('input', apply);
+    filters.addEventListener('click', e => {
+        const btn = e.target.closest('[data-filter]');
+        if (!btn) return;
+        filter = btn.dataset.filter;
+        filters.querySelectorAll('.btn').forEach(b => b.classList.toggle('active', b === btn));
+        apply();
+    });
+})();
 </script>
