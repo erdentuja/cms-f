@@ -1,0 +1,11 @@
+# Adatbázis (első betöltéskor automatikusan létrejön)
+storage/*.sqlite
+storage/*.sqlite-wal
+storage/*.sqlite-shm
+
+# Feltöltött média
+uploads/
+
+# Rendszer
+Thumbs.db
+.DS_Store
