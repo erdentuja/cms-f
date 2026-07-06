@@ -16,6 +16,13 @@ function base_url(string $path = ''): string {
     return $base . '/' . ltrim($path, '/');
 }
 
+/** Absolute URL (scheme + host) — sitemap-hez, OG tagekhez */
+function site_url(string $path = ''): string {
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    return $scheme . '://' . $host . base_url($path);
+}
+
 function redirect(string $path): never {
     header('Location: ' . base_url($path));
     exit;

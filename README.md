@@ -29,7 +29,8 @@ Az adatbázis (`storage/cms.sqlite`) az első betöltéskor automatikusan létre
 | **Médiatár** | Drag & drop feltöltés, automatikus WebP bélyegkép, URL másolás, képválasztó modal |
 | **Felhasználók** | Admin / szerkesztő szerepkörök, jelszókezelés |
 | **Beállítások** | Oldalnév, szlogen, meta leírás, lapozás, lábléc |
-| **Frontend** | Reszponzív magazin-téma, kereső, kategória-archívum, kapcsolódó cikkek, olvasási idő |
+| **Frontend** | Reszponzív magazin-téma, sötét mód, kereső, kategória-archívum, kapcsolódó cikkek, olvasási idő |
+| **SEO** | `sitemap.xml`, `rss.xml`, Open Graph + Twitter meta tagek, canonical URL-ek |
 
 ## Technika
 

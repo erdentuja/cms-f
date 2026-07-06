@@ -25,6 +25,8 @@ $routes = [
     ['GET',  '/post/{slug}',            'front_post'],
     ['GET',  '/category/{slug}',        'front_category'],
     ['GET',  '/search',                 'front_search'],
+    ['GET',  '/sitemap.xml',            'front_sitemap'],
+    ['GET',  '/rss.xml',                'front_rss'],
 
     // Admin auth
     ['GET',  '/admin/login',            'admin_login_form'],
