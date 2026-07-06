@@ -37,7 +37,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.015em; }
 
 /* ---- Shell ---- */
 .admin-shell { display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
-.admin-main { padding: 30px 38px 60px; max-width: 1240px; width: 100%; }
+.admin-main { padding: 30px 38px 60px; width: 100%; }
 
 /* ---- Sidebar ---- */
 .sidebar {
