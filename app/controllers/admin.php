@@ -170,6 +170,21 @@ function admin_page_save(): void {
     redirect("admin/pages/$id");
 }
 
+/** Blokkos oldal élő előnézete mentés nélkül (POST-olt blokkokból) */
+function admin_page_preview(): void {
+    require_login();
+    csrf_verify();
+    $blocksJson = json_decode((string)($_POST['blocks'] ?? '[]'), true);
+    $blocks = blocks_sanitize(is_array($blocksJson) ? $blocksJson : []);
+    $title = trim((string)($_POST['title'] ?? '')) ?: 'Előnézet';
+    front_render('page', [
+        'title' => $title,
+        'page' => ['title' => $title, 'builder' => 1, 'content' => ''],
+        'blocks' => $blocks,
+        'preview' => true,
+    ]);
+}
+
 function admin_page_delete(): void {
     require_login();
     csrf_verify();

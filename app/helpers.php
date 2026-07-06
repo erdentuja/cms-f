@@ -189,9 +189,31 @@ function block_types(): array {
         'button'  => 'Gomb',
         'columns' => 'Kép + szöveg',
         'gallery' => 'Galéria',
+        'quote'   => 'Idézet / vélemény',
+        'faq'     => 'GYIK (lenyíló)',
+        'counters'=> 'Számláló-sáv',
+        'video'   => 'Videó',
+        'map'     => 'Térkép',
         'spacer'  => 'Elválasztó',
         'html'    => 'Egyéni HTML',
     ];
+}
+
+/** Alapértelmezett elrendezés blokktípusonként */
+function block_layout_defaults(string $type): array {
+    $wide = in_array($type, ['columns', 'gallery', 'html', 'counters'], true);
+    return ['w' => $wide ? 'wide' : 'normal', 'bg' => 'none', 'pad' => 'none'];
+}
+
+/** YouTube/Vimeo URL → beágyazható iframe src (üres, ha nem ismerhető fel) */
+function video_embed_src(string $url): string {
+    if (preg_match('#(?:youtube\.com/(?:watch\?.*?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{6,20})#', $url, $m)) {
+        return 'https://www.youtube-nocookie.com/embed/' . $m[1];
+    }
+    if (preg_match('#vimeo\.com/(?:video/)?(\d+)#', $url, $m)) {
+        return 'https://player.vimeo.com/video/' . $m[1];
+    }
+    return '';
 }
 
 /** Blokklista szigorú validálása mentés előtt */
@@ -201,6 +223,10 @@ function blocks_sanitize(array $blocks): array {
         if (!is_array($b) || !isset($b['type']) || !array_key_exists($b['type'], block_types())) continue;
         $type = $b['type'];
         $clean = ['type' => $type];
+        $def = block_layout_defaults($type);
+        $clean['w'] = in_array($b['w'] ?? '', ['normal', 'wide', 'full'], true) ? $b['w'] : $def['w'];
+        $clean['bg'] = ($b['bg'] ?? '') === 'soft' ? 'soft' : 'none';
+        $clean['pad'] = in_array($b['pad'] ?? '', ['sm', 'md', 'lg'], true) ? $b['pad'] : 'none';
         switch ($type) {
             case 'heading':
                 $clean['text'] = trim((string)($b['text'] ?? ''));
@@ -216,7 +242,6 @@ function blocks_sanitize(array $blocks): array {
                 $clean['url'] = trim((string)($b['url'] ?? ''));
                 if ($clean['url'] === '') continue 2;
                 $clean['caption'] = trim((string)($b['caption'] ?? ''));
-                $clean['full'] = !empty($b['full']);
                 break;
             case 'button':
                 $clean['label'] = trim((string)($b['label'] ?? ''));
@@ -236,6 +261,44 @@ function blocks_sanitize(array $blocks): array {
                 if (!$images) continue 2;
                 $clean['images'] = $images;
                 break;
+            case 'quote':
+                $clean['text'] = trim((string)($b['text'] ?? ''));
+                if ($clean['text'] === '') continue 2;
+                $clean['author'] = trim((string)($b['author'] ?? ''));
+                $clean['role'] = trim((string)($b['role'] ?? ''));
+                $clean['image'] = trim((string)($b['image'] ?? ''));
+                break;
+            case 'faq':
+                $items = [];
+                foreach ((array)($b['items'] ?? []) as $it) {
+                    if (!is_array($it)) continue;
+                    $q = trim((string)($it['q'] ?? ''));
+                    if ($q === '') continue;
+                    $items[] = ['q' => $q, 'a' => trim((string)($it['a'] ?? ''))];
+                }
+                if (!$items) continue 2;
+                $clean['items'] = $items;
+                break;
+            case 'counters':
+                $items = [];
+                foreach ((array)($b['items'] ?? []) as $it) {
+                    if (!is_array($it)) continue;
+                    $v = trim((string)($it['value'] ?? ''));
+                    if ($v === '') continue;
+                    $items[] = ['value' => $v, 'label' => trim((string)($it['label'] ?? ''))];
+                }
+                if (!$items) continue 2;
+                $clean['items'] = $items;
+                break;
+            case 'video':
+                $clean['url'] = trim((string)($b['url'] ?? ''));
+                if (video_embed_src($clean['url']) === '') continue 2;
+                break;
+            case 'map':
+                $embed = trim((string)($b['embed'] ?? ''));
+                if (!preg_match('#^https://(www\.google\.com/maps/embed|maps\.google\.com/maps|www\.openstreetmap\.org/export/embed\.html)#', $embed)) continue 2;
+                $clean['embed'] = $embed;
+                break;
             case 'spacer':
                 $clean['size'] = in_array($b['size'] ?? '', ['sm', 'md', 'lg'], true) ? $b['size'] : 'md';
                 break;
@@ -249,23 +312,22 @@ function blocks_sanitize(array $blocks): array {
     return $out;
 }
 
-/** Egy blokk kirajzolása a frontenden */
+/** Egy blokk belső tartalma (a szélesség/háttér wrappert a blocks_render adja) */
 function block_render_one(array $b): string {
     switch ($b['type'] ?? '') {
         case 'heading':
             $level = (int)($b['level'] ?? 2) === 3 ? 3 : 2;
-            $align = ($b['align'] ?? 'left') === 'center' ? ' align-center' : '';
-            return "<div class=\"block block-heading{$align}\"><h{$level}>" . e((string)($b['text'] ?? '')) . "</h{$level}></div>";
+            $align = ($b['align'] ?? 'left') === 'center' ? ' class="ta-center"' : '';
+            return "<h{$level}{$align}>" . e((string)($b['text'] ?? '')) . "</h{$level}>";
         case 'text':
-            return '<div class="block block-text prose">' . (string)($b['html'] ?? '') . '</div>';
+            return '<div class="prose">' . (string)($b['html'] ?? '') . '</div>';
         case 'image':
             $url = (string)($b['url'] ?? '');
             if ($url === '') return '';
-            $cls = 'block block-image' . (!empty($b['full']) ? ' block-wide' : '');
             $cap = trim((string)($b['caption'] ?? ''));
             $img = '<img src="' . e(base_url($url)) . '" alt="' . e($cap) . '" loading="lazy">';
             $figcap = $cap !== '' ? '<figcaption>' . e($cap) . '</figcaption>' : '';
-            return "<figure class=\"{$cls}\">{$img}{$figcap}</figure>";
+            return "<figure>{$img}{$figcap}</figure>";
         case 'button':
             $label = trim((string)($b['label'] ?? ''));
             $url = trim((string)($b['url'] ?? ''));
@@ -273,33 +335,103 @@ function block_render_one(array $b): string {
             $cls = ($b['style'] ?? 'primary') === 'outline' ? 'btn-outline' : 'btn-primary';
             $href = preg_match('#^https?://#i', $url) ? $url : base_url($url);
             $target = !empty($b['new_tab']) ? ' target="_blank" rel="noopener"' : '';
-            return '<div class="block block-button"><a class="btn ' . $cls . '" href="' . e($href) . '"' . $target . '>' . e($label) . '</a></div>';
+            return '<a class="btn ' . $cls . '" href="' . e($href) . '"' . $target . '>' . e($label) . '</a>';
         case 'columns':
             $img = trim((string)($b['image'] ?? ''));
             $side = ($b['image_side'] ?? 'left') === 'right' ? ' image-right' : '';
             $imgHtml = $img !== '' ? '<img src="' . e(base_url($img)) . '" alt="" loading="lazy">' : '';
-            return "<div class=\"block block-wide block-columns{$side}\"><div class=\"block-col-media\">{$imgHtml}</div><div class=\"block-col-text prose\">" . (string)($b['html'] ?? '') . '</div></div>';
+            return "<div class=\"cols{$side}\"><div class=\"col-media\">{$imgHtml}</div><div class=\"col-text prose\">" . (string)($b['html'] ?? '') . '</div></div>';
         case 'gallery':
             $images = (array)($b['images'] ?? []);
             if (!$images) return '';
             $items = '';
             foreach ($images as $u) $items .= '<img src="' . e(base_url((string)$u)) . '" alt="" loading="lazy">';
-            return "<div class=\"block block-wide block-gallery\">{$items}</div>";
+            return "<div class=\"gal\">{$items}</div>";
+        case 'quote':
+            $img = trim((string)($b['image'] ?? ''));
+            $avatar = $img !== '' ? '<img class="tstm-avatar" src="' . e(base_url($img)) . '" alt="' . e((string)($b['author'] ?? '')) . '" loading="lazy">' : '';
+            $who = '';
+            if (($b['author'] ?? '') !== '' || ($b['role'] ?? '') !== '') {
+                $who = '<figcaption class="tstm-who"><strong>' . e((string)($b['author'] ?? '')) . '</strong>'
+                     . (($b['role'] ?? '') !== '' ? '<span>' . e((string)$b['role']) . '</span>' : '')
+                     . '</figcaption>';
+            }
+            return '<figure class="tstm">' . $avatar . '<blockquote>' . e((string)($b['text'] ?? '')) . '</blockquote>' . $who . '</figure>';
+        case 'faq':
+            $items = '';
+            foreach ((array)($b['items'] ?? []) as $it) {
+                if (!is_array($it) || trim((string)($it['q'] ?? '')) === '') continue;
+                $items .= '<details class="faq-item"><summary>' . e((string)$it['q']) . '</summary><div class="faq-a">' . nl2br(e((string)($it['a'] ?? ''))) . '</div></details>';
+            }
+            return $items === '' ? '' : '<div class="faq">' . $items . '</div>';
+        case 'counters':
+            $items = '';
+            foreach ((array)($b['items'] ?? []) as $it) {
+                if (!is_array($it) || trim((string)($it['value'] ?? '')) === '') continue;
+                $items .= '<div class="cnt"><div class="cnt-v" data-v="' . e((string)$it['value']) . '">' . e((string)$it['value']) . '</div>'
+                        . '<div class="cnt-l">' . e((string)($it['label'] ?? '')) . '</div></div>';
+            }
+            if ($items === '') return '';
+            static $cntScript = false;
+            $script = '';
+            if (!$cntScript) {
+                $cntScript = true;
+                $script = <<<'HTML'
+<script>
+(function () {
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+            if (!en.isIntersecting) return;
+            io.unobserve(en.target);
+            var raw = en.target.dataset.v || '', m = raw.match(/\d+/);
+            if (!m) return;
+            var num = parseInt(m[0], 10), pre = raw.slice(0, m.index), suf = raw.slice(m.index + m[0].length);
+            var t0 = performance.now(), dur = 1100;
+            (function tick(t) {
+                var p = Math.min(1, (t - t0) / dur), ease = 1 - Math.pow(1 - p, 3);
+                en.target.textContent = pre + Math.round(num * ease) + suf;
+                if (p < 1) requestAnimationFrame(tick);
+            })(t0);
+        });
+    }, { threshold: 0.4 });
+    document.querySelectorAll('.cnt-v').forEach(function (el) { io.observe(el); });
+})();
+</script>
+HTML;
+            }
+            return '<div class="counters">' . $items . '</div>' . $script;
+        case 'video':
+            $src = video_embed_src((string)($b['url'] ?? ''));
+            if ($src === '') return '';
+            return '<div class="video-embed"><iframe src="' . e($src) . '" title="Videó" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>';
+        case 'map':
+            $embed = (string)($b['embed'] ?? '');
+            if ($embed === '') return '';
+            return '<div class="map-embed"><iframe src="' . e($embed) . '" title="Térkép" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe></div>';
         case 'spacer':
             $size = in_array($b['size'] ?? '', ['sm', 'md', 'lg'], true) ? $b['size'] : 'md';
-            return "<div class=\"block block-spacer size-{$size}\"></div>";
+            return "<div class=\"spacer-{$size}\"></div>";
         case 'html':
-            return '<div class="block block-wide block-html">' . (string)($b['code'] ?? '') . '</div>';
+            return (string)($b['code'] ?? '');
         default:
             return '';
     }
 }
 
-/** Teljes blokklista kirajzolása */
+/** Teljes blokklista kirajzolása szélesség/háttér/térköz wrapperrel */
 function blocks_render(array $blocks): string {
     $out = '';
     foreach ($blocks as $b) {
-        if (is_array($b)) $out .= block_render_one($b);
+        if (!is_array($b)) continue;
+        $inner = block_render_one($b);
+        if ($inner === '') continue;
+        $type = (string)($b['type'] ?? '');
+        $def = block_layout_defaults($type);
+        $w = in_array($b['w'] ?? '', ['normal', 'wide', 'full'], true) ? $b['w'] : $def['w'];
+        $cls = 'blk-row';
+        if (($b['bg'] ?? '') === 'soft') $cls .= ' bg-soft';
+        if (in_array($b['pad'] ?? '', ['sm', 'md', 'lg'], true)) $cls .= ' pad-' . $b['pad'];
+        $out .= '<section class="' . $cls . '"><div class="blk w-' . $w . ' block-' . e($type) . '">' . $inner . '</div></section>';
     }
     return $out;
 }

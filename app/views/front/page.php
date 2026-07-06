@@ -1,3 +1,4 @@
+<?php if (!empty($preview)): ?><div class="preview-bar">Előnézet — a módosítások nincsenek elmentve</div><?php endif; ?>
 <article class="article">
     <header class="article-header container-narrow">
         <h1><?= e($page['title']) ?></h1>

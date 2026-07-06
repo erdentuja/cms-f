@@ -278,6 +278,19 @@ select.input { cursor: pointer; }
 .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery-thumb .icon-btn { position: absolute; top: 4px; right: 4px; background: rgb(255 255 255 / .85); width: 26px; height: 26px; }
 textarea.mono { font-family: ui-monospace, Consolas, monospace; font-size: .88rem; }
+.blk-layout { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.blk-layout summary {
+    cursor: pointer; font-size: .82rem; font-weight: 600; color: var(--ink-3);
+    list-style: none; user-select: none;
+}
+.blk-layout summary::before { content: '▸ '; }
+.blk-layout[open] summary::before { content: '▾ '; }
+.blk-layout[open] summary { margin-bottom: 10px; }
+.tpl-form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.rep-list { display: grid; gap: 10px; margin-bottom: 12px; }
+.rep-row { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 8px; align-items: start; }
+.rep-row .icon-btn { margin-top: 7px; }
+#previewBtn { margin-top: 10px; }
 
 .featured-preview {
     border-radius: 11px; overflow: hidden; margin-bottom: 12px;

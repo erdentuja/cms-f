@@ -55,6 +55,7 @@
                 <input class="input" type="text" name="slug" value="<?= e($page['slug'] ?? '') ?>" placeholder="automatikus a címből">
             </label>
             <button class="btn btn-primary btn-block" type="submit">Mentés</button>
+            <button class="btn btn-ghost btn-block" type="button" id="previewBtn" hidden>Előnézet új lapon</button>
             <p class="muted side-hint">A menübe a <a class="link" href="<?= base_url('admin/menu') ?>">Menük</a> oldalon tudod felvenni.</p>
             <?php if (($page['status'] ?? '') === 'published' && !empty($page['slug'])): ?>
                 <a class="link center-link" href="<?= base_url(e($page['slug'])) ?>" target="_blank">Megtekintés az oldalon →</a>
@@ -125,6 +126,48 @@ function imagePickerField(key, url) {
         </div>`;
 }
 
+function repRow(type, it) {
+    it = it || {};
+    if (type === 'faq') return `
+        <div class="rep-row">
+            <input class="input" data-i="q" placeholder="Kérdés" value="${escAttr(it.q)}">
+            <textarea class="input" data-i="a" rows="2" placeholder="Válasz">${escAttr(it.a)}</textarea>
+            <button type="button" class="icon-btn danger" data-remove-row title="Sor törlése">${TRASH_ICON}</button>
+        </div>`;
+    return `
+        <div class="rep-row">
+            <input class="input" data-i="value" placeholder="Érték (pl. 120+)" value="${escAttr(it.value)}">
+            <input class="input" data-i="label" placeholder="Felirat (pl. elégedett ügyfél)" value="${escAttr(it.label)}">
+            <button type="button" class="icon-btn danger" data-remove-row title="Sor törlése">${TRASH_ICON}</button>
+        </div>`;
+}
+
+function layoutFields(type, d) {
+    const defW = ['columns', 'gallery', 'html', 'counters'].includes(type) ? 'wide' : 'normal';
+    const w = d.w || defW, bg = d.bg || 'none', pad = d.pad || 'none';
+    return `
+        <details class="blk-layout">
+            <summary>Elrendezés</summary>
+            <div class="tpl-form-grid cols-3">
+                <label class="field"><span>Szélesség</span><select class="input" data-k="w">
+                    <option value="normal" ${w === 'normal' ? 'selected' : ''}>Normál</option>
+                    <option value="wide" ${w === 'wide' ? 'selected' : ''}>Széles</option>
+                    <option value="full" ${w === 'full' ? 'selected' : ''}>Teljes</option>
+                </select></label>
+                <label class="field"><span>Háttérsáv</span><select class="input" data-k="bg">
+                    <option value="none" ${bg === 'none' ? 'selected' : ''}>Nincs</option>
+                    <option value="soft" ${bg === 'soft' ? 'selected' : ''}>Színezett</option>
+                </select></label>
+                <label class="field"><span>Függőleges térköz</span><select class="input" data-k="pad">
+                    <option value="none" ${pad === 'none' ? 'selected' : ''}>Nincs</option>
+                    <option value="sm" ${pad === 'sm' ? 'selected' : ''}>Kicsi</option>
+                    <option value="md" ${pad === 'md' ? 'selected' : ''}>Közepes</option>
+                    <option value="lg" ${pad === 'lg' ? 'selected' : ''}>Nagy</option>
+                </select></label>
+            </div>
+        </details>`;
+}
+
 function buildFields(type, data) {
     data = data || {};
     switch (type) {
@@ -145,8 +188,7 @@ function buildFields(type, data) {
             return `<div class="richtext" data-k="html" data-quill="1"></div>`;
         case 'image':
             return imagePickerField('url', data.url) + `
-                <label class="field"><span>Felirat <em class="muted">(opcionális)</em></span><input class="input" type="text" data-k="caption" value="${escAttr(data.caption)}"></label>
-                <label class="check-field"><input type="checkbox" data-k="full" ${data.full ? 'checked' : ''}><span>Teljes szélesség</span></label>`;
+                <label class="field"><span>Felirat <em class="muted">(opcionális)</em></span><input class="input" type="text" data-k="caption" value="${escAttr(data.caption)}"></label>`;
         case 'button':
             return `
                 <label class="field"><span>Felirat</span><input class="input" type="text" data-k="label" value="${escAttr(data.label)}"></label>
@@ -170,6 +212,31 @@ function buildFields(type, data) {
                 <div class="gallery-grid" data-gallery></div>
                 <input type="hidden" data-k="images" data-json="1" value="[]">
                 <button type="button" class="btn btn-ghost btn-sm" data-add-gallery-img>Kép hozzáadása</button>`;
+        case 'quote':
+            return `
+                <label class="field"><span>Idézet szövege</span><textarea class="input" data-k="text" rows="3">${escAttr(data.text)}</textarea></label>
+                <div class="tpl-form-grid">
+                    <label class="field"><span>Név</span><input class="input" type="text" data-k="author" value="${escAttr(data.author)}"></label>
+                    <label class="field"><span>Titulus <em class="muted">(opcionális)</em></span><input class="input" type="text" data-k="role" value="${escAttr(data.role)}"></label>
+                </div>` + imagePickerField('image', data.image);
+        case 'faq': {
+            const rows = ((data.items && data.items.length ? data.items : [{}])).map(it => repRow('faq', it)).join('');
+            return `<div class="rep-list" data-rep="faq">${rows}</div>
+                <button type="button" class="btn btn-ghost btn-sm" data-add-row="faq">+ Kérdés hozzáadása</button>`;
+        }
+        case 'counters': {
+            const rows = ((data.items && data.items.length ? data.items : [{}])).map(it => repRow('counters', it)).join('');
+            return `<div class="rep-list" data-rep="counters">${rows}</div>
+                <button type="button" class="btn btn-ghost btn-sm" data-add-row="counters">+ Számláló hozzáadása</button>`;
+        }
+        case 'video':
+            return `
+                <label class="field"><span>Videó URL</span><input class="input" type="text" data-k="url" value="${escAttr(data.url)}" placeholder="https://www.youtube.com/watch?v=… vagy https://vimeo.com/…"></label>
+                <p class="muted">YouTube és Vimeo linkeket ismer fel, adatvédelmi (nocookie) beágyazással.</p>`;
+        case 'map':
+            return `
+                <label class="field"><span>Térkép beágyazási URL</span><input class="input" type="text" data-k="embed" value="${escAttr(data.embed)}" placeholder="https://www.google.com/maps/embed?pb=… vagy OpenStreetMap embed"></label>
+                <p class="muted">Google Maps: Megosztás → Térkép beágyazása → másold az iframe <code>src</code> értékét. OpenStreetMap: Megosztás → HTML.</p>`;
         case 'spacer':
             return `<label class="field"><span>Magasság</span><select class="input" data-k="size">
                     <option value="sm" ${data.size === 'sm' ? 'selected' : ''}>Kicsi</option>
@@ -209,7 +276,7 @@ function addBlock(type, data) {
             <strong class="block-card-label">${BLOCK_LABELS[type] || type}</strong>
             <button type="button" class="icon-btn danger" data-remove-block title="Blokk törlése">${TRASH_ICON}</button>
         </div>
-        <div class="block-card-body">${buildFields(type, data)}</div>`;
+        <div class="block-card-body">${buildFields(type, data)}${layoutFields(type, data)}</div>`;
     blockList.appendChild(li);
 
     if (type === 'gallery') setGalleryImages(li, (data && data.images) || []);
@@ -228,6 +295,14 @@ function addBlock(type, data) {
 
 function serializeBlock(li) {
     const obj = { type: li.dataset.type };
+    const rep = li.querySelector('[data-rep]');
+    if (rep) {
+        obj.items = [...rep.querySelectorAll('.rep-row')].map(r => {
+            const o = {};
+            r.querySelectorAll('[data-i]').forEach(f => o[f.dataset.i] = f.value);
+            return o;
+        });
+    }
     li.querySelectorAll('[data-k]').forEach(el => {
         const k = el.dataset.k;
         if (el.dataset.quill) {
@@ -288,6 +363,17 @@ blockList.addEventListener('click', e => {
         setGalleryImages(card, arr);
         return;
     }
+    const addRowBtn = e.target.closest('[data-add-row]');
+    if (addRowBtn) {
+        addRowBtn.closest('.block-card-body').querySelector('[data-rep]')
+            .insertAdjacentHTML('beforeend', repRow(addRowBtn.dataset.addRow));
+        return;
+    }
+    const removeRowBtn = e.target.closest('[data-remove-row]');
+    if (removeRowBtn) {
+        removeRowBtn.closest('.rep-row').remove();
+        return;
+    }
     const removeBtn = e.target.closest('[data-remove-block]');
     if (removeBtn) {
         if (confirm('Törlöd ezt a blokkot?')) removeBtn.closest('.block-card').remove();
@@ -329,14 +415,35 @@ const tabBtns = document.querySelectorAll('.tab-btn');
 const classicPane = document.getElementById('classicPane');
 const builderPane = document.getElementById('builderPane');
 const builderModeInput = document.getElementById('builderMode');
+const previewBtn = document.getElementById('previewBtn');
 function setTab(tab) {
     tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     classicPane.hidden = tab !== 'classic';
     builderPane.hidden = tab !== 'builder';
     builderModeInput.value = tab === 'builder' ? '1' : '0';
+    previewBtn.hidden = tab !== 'builder';
 }
 tabBtns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 setTab(<?= json_encode($builderMode ? 'builder' : 'classic') ?>);
+
+// Élő előnézet: a blokkokat mentés nélkül POST-oljuk egy új lapra
+previewBtn.addEventListener('click', () => {
+    const f = document.createElement('form');
+    f.method = 'post';
+    f.action = <?= json_encode(base_url('admin/pages/preview')) ?>;
+    f.target = '_blank';
+    const add = (n, v) => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = n; i.value = v;
+        f.appendChild(i);
+    };
+    add('_csrf', window.CSRF);
+    add('title', document.querySelector('[name=title]').value || 'Előnézet');
+    add('blocks', JSON.stringify([...blockList.querySelectorAll('.block-card')].map(serializeBlock)));
+    document.body.appendChild(f);
+    f.submit();
+    f.remove();
+});
 
 document.getElementById('editForm').addEventListener('submit', () => {
     // getSemanticHTML() a szóközöket &nbsp;-re cseréli — visszaalakítjuk
