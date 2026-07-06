@@ -153,14 +153,12 @@ function admin_page_save(): void {
     $data = [
         $title, $slug, (string)($_POST['content'] ?? ''),
         in_array($_POST['status'] ?? '', ['published', 'draft'], true) ? $_POST['status'] : 'published',
-        isset($_POST['show_in_menu']) ? 1 : 0,
-        (int)($_POST['menu_order'] ?? 0),
     ];
     if ($id) {
-        $st = db()->prepare("UPDATE pages SET title=?, slug=?, content=?, status=?, show_in_menu=?, menu_order=?, updated_at=datetime('now','localtime') WHERE id=?");
+        $st = db()->prepare("UPDATE pages SET title=?, slug=?, content=?, status=?, updated_at=datetime('now','localtime') WHERE id=?");
         $st->execute([...$data, $id]);
     } else {
-        $st = db()->prepare('INSERT INTO pages (title, slug, content, status, show_in_menu, menu_order) VALUES (?,?,?,?,?,?)');
+        $st = db()->prepare('INSERT INTO pages (title, slug, content, status) VALUES (?,?,?,?)');
         $st->execute($data);
         $id = (int)db()->lastInsertId();
     }
@@ -209,6 +207,63 @@ function admin_category_delete(): void {
     db()->prepare('DELETE FROM categories WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
     flash_set('success', 'Kategória törölve.');
     redirect('admin/categories');
+}
+
+/* ---------- Menu ---------- */
+
+function admin_menu(): void {
+    require_login();
+    $items = ['header' => [], 'footer' => []];
+    foreach (db()->query('SELECT * FROM menu_items ORDER BY sort_order, id') as $mi) {
+        $items[$mi['location']][] = $mi;
+    }
+    $pages = db()->query("SELECT title, slug FROM pages WHERE status='published' ORDER BY title")->fetchAll();
+    $cats = db()->query('SELECT name, slug FROM categories ORDER BY name')->fetchAll();
+    admin_render('menu', ['title' => 'Menük', 'items' => $items, 'pages' => $pages, 'cats' => $cats]);
+}
+
+function admin_menu_save(): void {
+    require_login();
+    csrf_verify();
+    $id = (int)($_POST['id'] ?? 0);
+    $label = trim((string)($_POST['label'] ?? ''));
+    $url = trim((string)($_POST['url'] ?? ''));
+    if ($label === '' || $url === '') {
+        flash_set('error', 'A felirat és az URL megadása kötelező.');
+        redirect('admin/menu');
+    }
+    if (!preg_match('#^https?://#i', $url)) $url = ltrim($url, '/');
+    $location = ($_POST['location'] ?? '') === 'footer' ? 'footer' : 'header';
+    $newTab = isset($_POST['new_tab']) ? 1 : 0;
+
+    if ($id) {
+        db()->prepare('UPDATE menu_items SET label=?, url=?, location=?, new_tab=? WHERE id=?')
+            ->execute([$label, $url, $location, $newTab, $id]);
+    } else {
+        $max = (int)db()->query("SELECT COALESCE(MAX(sort_order),0) FROM menu_items WHERE location=" . db()->quote($location))->fetchColumn();
+        db()->prepare('INSERT INTO menu_items (label, url, location, sort_order, new_tab) VALUES (?,?,?,?,?)')
+            ->execute([$label, $url, $location, $max + 1, $newTab]);
+    }
+    flash_set('success', 'Menüelem mentve.');
+    redirect('admin/menu');
+}
+
+function admin_menu_delete(): void {
+    require_login();
+    csrf_verify();
+    db()->prepare('DELETE FROM menu_items WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
+    flash_set('success', 'Menüelem törölve.');
+    redirect('admin/menu');
+}
+
+function admin_menu_reorder(): void {
+    require_login();
+    csrf_verify();
+    $data = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ids = array_map('intval', $data['ids'] ?? []);
+    $st = db()->prepare('UPDATE menu_items SET sort_order=? WHERE id=?');
+    foreach ($ids as $i => $id) $st->execute([$i + 1, $id]);
+    json_out(['ok' => true]);
 }
 
 /* ---------- Media ---------- */

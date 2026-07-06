@@ -4,6 +4,7 @@ $nav = [
     ['admin/posts',      'Posztok',     'M4 4h16v16H4zM8 8h8M8 12h8M8 16h5'],
     ['admin/pages',      'Oldalak',     'M6 2h9l5 5v15H6zM14 2v6h6'],
     ['admin/categories', 'Kategóriák',  'M3 6h18M3 12h12M3 18h6'],
+    ['admin/menu',       'Menük',       'M4 6h16M4 12h16M4 18h10M20 15l-3 3 3 3'],
     ['admin/media',      'Médiatár',    'M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6M8.5 9a1 1 0 1 0 0-.01'],
 ];
 if (($user['role'] ?? '') === 'admin') {

@@ -1,8 +1,15 @@
 <?php
 declare(strict_types=1);
 
-function front_nav_pages(): array {
-    return db()->query("SELECT title, slug FROM pages WHERE status='published' AND show_in_menu=1 ORDER BY menu_order, title")->fetchAll();
+function front_menu(string $location): array {
+    $st = db()->prepare('SELECT * FROM menu_items WHERE location=? ORDER BY sort_order, id');
+    $st->execute([$location]);
+    return $st->fetchAll();
+}
+
+/** Menüelem href-je: külső URL változatlanul, belső útvonal base_url-lel */
+function menu_href(string $url): string {
+    return preg_match('#^https?://#i', $url) ? $url : base_url($url);
 }
 
 function front_categories(): array {
@@ -11,7 +18,8 @@ function front_categories(): array {
 }
 
 function front_render(string $tpl, array $data = []): void {
-    $data['navPages'] = front_nav_pages();
+    $data['navItems'] = front_menu('header');
+    $data['footerItems'] = front_menu('footer');
     $data['content'] = view('front/' . $tpl, $data);
     echo view('front/layout', $data);
 }

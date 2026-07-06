@@ -33,15 +33,8 @@
                 <span>URL (slug)</span>
                 <input class="input" type="text" name="slug" value="<?= e($page['slug'] ?? '') ?>" placeholder="automatikus a címből">
             </label>
-            <label class="check-field">
-                <input type="checkbox" name="show_in_menu" <?= ($page['show_in_menu'] ?? 1) ? 'checked' : '' ?>>
-                <span>Megjelenítés a menüben</span>
-            </label>
-            <label class="field">
-                <span>Sorrend a menüben</span>
-                <input class="input" type="number" name="menu_order" value="<?= (int)($page['menu_order'] ?? 0) ?>">
-            </label>
             <button class="btn btn-primary btn-block" type="submit">Mentés</button>
+            <p class="muted side-hint">A menübe a <a class="link" href="<?= base_url('admin/menu') ?>">Menük</a> oldalon tudod felvenni.</p>
             <?php if (($page['status'] ?? '') === 'published' && !empty($page['slug'])): ?>
                 <a class="link center-link" href="<?= base_url(e($page['slug'])) ?>" target="_blank">Megtekintés az oldalon →</a>
             <?php endif; ?>

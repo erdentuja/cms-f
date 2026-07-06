@@ -14,8 +14,30 @@ function db(): PDO {
         $pdo->exec('PRAGMA journal_mode = WAL');
         $pdo->exec('PRAGMA foreign_keys = ON');
         if ($fresh) db_install($pdo);
+        db_migrate($pdo);
     }
     return $pdo;
+}
+
+/** Idempotens migrációk már létező adatbázisokhoz */
+function db_migrate(PDO $db): void {
+    $db->exec("CREATE TABLE IF NOT EXISTS menu_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL,
+        url TEXT NOT NULL,
+        location TEXT NOT NULL DEFAULT 'header',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        new_tab INTEGER NOT NULL DEFAULT 0
+    )");
+    $seeded = $db->query("SELECT value FROM settings WHERE key='menu_seeded'")->fetchColumn();
+    if (!$seeded) {
+        $st = $db->prepare('INSERT INTO menu_items (label, url, location, sort_order) VALUES (?,?,?,?)');
+        $i = 0;
+        foreach ($db->query("SELECT title, slug FROM pages WHERE status='published' AND show_in_menu=1 ORDER BY menu_order, title") as $p) {
+            $st->execute([$p['title'], $p['slug'], 'header', ++$i]);
+        }
+        $db->exec("INSERT INTO settings (key, value) VALUES ('menu_seeded','1')");
+    }
 }
 
 function db_install(PDO $db): void {

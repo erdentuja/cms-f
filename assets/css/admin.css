@@ -247,6 +247,24 @@ select.input { cursor: pointer; }
 .featured-preview img { width: 100%; height: 100%; object-fit: cover; }
 .featured-preview.empty span { color: var(--ink-3); font-size: .85rem; }
 
+/* ---- Menu manager ---- */
+.menu-columns { display: grid; gap: 20px; align-content: start; }
+.menu-list { list-style: none; padding: 8px; display: grid; gap: 6px; }
+.menu-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 11px; padding: 9px 12px;
+    transition: box-shadow .16s, opacity .16s;
+}
+.menu-item.dragging { opacity: .45; box-shadow: 0 8px 22px rgb(20 20 35 / .18); }
+.drag-handle { color: var(--ink-3); cursor: grab; display: grid; place-items: center; flex: none; }
+.drag-handle svg { width: 16px; height: 16px; }
+.menu-item:active .drag-handle { cursor: grabbing; }
+.menu-item-label { flex: 1; min-width: 0; line-height: 1.3; display: grid; }
+.menu-item-label strong { font-size: .9rem; }
+.menu-item-label .muted { font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-hint { font-size: .82rem; margin-top: 12px; text-align: center; }
+
 /* ---- Media grid ---- */
 .dropzone {
     border: 2px dashed var(--line); border-radius: var(--radius);

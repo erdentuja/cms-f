@@ -12,13 +12,12 @@
 <div class="panel">
     <?php if ($pages): ?>
     <table class="table">
-        <thead><tr><th>Cím</th><th>URL</th><th>Menüben</th><th>Státusz</th><th>Módosítva</th><th></th></tr></thead>
+        <thead><tr><th>Cím</th><th>URL</th><th>Státusz</th><th>Módosítva</th><th></th></tr></thead>
         <tbody>
             <?php foreach ($pages as $p): ?>
             <tr>
                 <td><a class="row-title" href="<?= base_url('admin/pages/' . $p['id']) ?>"><?= e($p['title']) ?></a></td>
                 <td class="muted">/<?= e($p['slug']) ?></td>
-                <td><?= $p['show_in_menu'] ? '✓' : '—' ?></td>
                 <td><span class="badge <?= $p['status'] === 'published' ? 'badge-green' : 'badge-gray' ?>"><?= $p['status'] === 'published' ? 'Publikált' : 'Vázlat' ?></span></td>
                 <td class="muted"><?= e(substr($p['updated_at'], 0, 16)) ?></td>
                 <td class="row-actions">

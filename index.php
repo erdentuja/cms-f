@@ -51,6 +51,11 @@ $routes = [
     ['POST', '/admin/categories/save',  'admin_category_save'],
     ['POST', '/admin/categories/delete','admin_category_delete'],
 
+    ['GET',  '/admin/menu',             'admin_menu'],
+    ['POST', '/admin/menu/save',        'admin_menu_save'],
+    ['POST', '/admin/menu/delete',      'admin_menu_delete'],
+    ['POST', '/admin/menu/reorder',     'admin_menu_reorder'],
+
     ['GET',  '/admin/media',            'admin_media'],
     ['GET',  '/admin/media/list',       'admin_media_list'],
     ['POST', '/admin/media/upload',     'admin_media_upload'],

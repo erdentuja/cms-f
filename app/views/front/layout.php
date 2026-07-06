@@ -38,8 +38,8 @@
         </a>
         <nav class="main-nav" id="mainNav">
             <a href="<?= base_url('/') ?>">Kezdőlap</a>
-            <?php foreach ($navPages ?? [] as $np): ?>
-                <a href="<?= base_url(e($np['slug'])) ?>"><?= e($np['title']) ?></a>
+            <?php foreach ($navItems ?? [] as $mi): ?>
+                <a href="<?= e(menu_href($mi['url'])) ?>"<?= $mi['new_tab'] ? ' target="_blank" rel="noopener"' : '' ?>><?= e($mi['label']) ?></a>
             <?php endforeach; ?>
         </nav>
         <form class="search-form" action="<?= base_url('search') ?>" method="get">
@@ -67,6 +67,13 @@
             <a class="brand" href="<?= base_url('/') ?>"><span class="brand-mark">✦</span> <?= e(setting('site_name')) ?></a>
             <p class="footer-tagline"><?= e(setting('tagline')) ?></p>
         </div>
+        <?php if (!empty($footerItems)): ?>
+        <nav class="footer-nav">
+            <?php foreach ($footerItems as $mi): ?>
+                <a href="<?= e(menu_href($mi['url'])) ?>"<?= $mi['new_tab'] ? ' target="_blank" rel="noopener"' : '' ?>><?= e($mi['label']) ?></a>
+            <?php endforeach; ?>
+        </nav>
+        <?php endif; ?>
         <p class="footer-copy"><?= e(setting('footer_text')) ?></p>
     </div>
 </footer>
