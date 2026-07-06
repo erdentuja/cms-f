@@ -21,6 +21,10 @@ function db(): PDO {
 
 /** Idempotens migrációk már létező adatbázisokhoz */
 function db_migrate(PDO $db): void {
+    $pageCols = array_column($db->query('PRAGMA table_info(pages)')->fetchAll(), 'name');
+    if (!in_array('builder', $pageCols, true)) $db->exec('ALTER TABLE pages ADD COLUMN builder INTEGER NOT NULL DEFAULT 0');
+    if (!in_array('blocks', $pageCols, true)) $db->exec("ALTER TABLE pages ADD COLUMN blocks TEXT NOT NULL DEFAULT '[]'");
+
     $db->exec("CREATE TABLE IF NOT EXISTS menu_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         label TEXT NOT NULL,

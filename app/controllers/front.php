@@ -78,7 +78,8 @@ function front_page(string $slug): void {
     $st->execute([$slug]);
     $page = $st->fetch();
     if (!$page) { http_response_code(404); echo view('front/404'); return; }
-    front_render('page', ['title' => $page['title'], 'page' => $page]);
+    $blocks = $page['builder'] ? (json_decode($page['blocks'], true) ?: []) : [];
+    front_render('page', ['title' => $page['title'], 'page' => $page, 'blocks' => $blocks]);
 }
 
 function front_category(string $slug): void {

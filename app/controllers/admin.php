@@ -138,7 +138,7 @@ function admin_page_form(string $id = ''): void {
         $page = $st->fetch();
         if (!$page) { flash_set('error', 'Az oldal nem található.'); redirect('admin/pages'); }
     }
-    admin_render('page-edit', ['title' => $page ? 'Oldal szerkesztése' : 'Új oldal', 'page' => $page]);
+    admin_render('page-edit', ['title' => $page ? 'Oldal szerkesztése' : 'Új oldal', 'page' => $page, 'blockTypes' => block_types()]);
 }
 
 function admin_page_save(): void {
@@ -150,15 +150,19 @@ function admin_page_save(): void {
 
     $slug = trim((string)($_POST['slug'] ?? ''));
     $slug = unique_slug(db(), 'pages', slugify($slug !== '' ? $slug : $title), $id);
+    $builder = !empty($_POST['builder']) ? 1 : 0;
+    $blocksJson = json_decode((string)($_POST['blocks'] ?? '[]'), true);
+    $blocks = json_encode(blocks_sanitize(is_array($blocksJson) ? $blocksJson : []));
     $data = [
         $title, $slug, (string)($_POST['content'] ?? ''),
         in_array($_POST['status'] ?? '', ['published', 'draft'], true) ? $_POST['status'] : 'published',
+        $builder, $blocks,
     ];
     if ($id) {
-        $st = db()->prepare("UPDATE pages SET title=?, slug=?, content=?, status=?, updated_at=datetime('now','localtime') WHERE id=?");
+        $st = db()->prepare("UPDATE pages SET title=?, slug=?, content=?, status=?, builder=?, blocks=?, updated_at=datetime('now','localtime') WHERE id=?");
         $st->execute([...$data, $id]);
     } else {
-        $st = db()->prepare('INSERT INTO pages (title, slug, content, status) VALUES (?,?,?,?)');
+        $st = db()->prepare('INSERT INTO pages (title, slug, content, status, builder, blocks) VALUES (?,?,?,?,?,?)');
         $st->execute($data);
         $id = (int)db()->lastInsertId();
     }

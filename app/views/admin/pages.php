@@ -16,7 +16,10 @@
         <tbody>
             <?php foreach ($pages as $p): ?>
             <tr>
-                <td><a class="row-title" href="<?= base_url('admin/pages/' . $p['id']) ?>"><?= e($p['title']) ?></a></td>
+                <td>
+                    <a class="row-title" href="<?= base_url('admin/pages/' . $p['id']) ?>"><?= e($p['title']) ?></a>
+                    <?php if (!empty($p['builder'])): ?><span class="badge badge-gray">Oldalépítő</span><?php endif; ?>
+                </td>
                 <td class="muted">/<?= e($p['slug']) ?></td>
                 <td><span class="badge <?= $p['status'] === 'published' ? 'badge-green' : 'badge-gray' ?>"><?= $p['status'] === 'published' ? 'Publikált' : 'Vázlat' ?></span></td>
                 <td class="muted"><?= e(substr($p['updated_at'], 0, 16)) ?></td>
