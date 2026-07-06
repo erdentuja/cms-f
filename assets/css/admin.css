@@ -323,6 +323,17 @@ textarea.mono { font-family: ui-monospace, Consolas, monospace; font-size: .88re
 .tpl-form-grid .span-2 { grid-column: span 2; }
 input[type=range].input { padding: 0; height: 42px; accent-color: var(--accent); border: 0; box-shadow: none; }
 
+/* ---- Plugins ---- */
+.plugin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.plugin-card { padding: 20px 22px; display: grid; gap: 8px; align-content: start; }
+.plugin-card.active { border-color: var(--accent); }
+.plugin-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.plugin-head h2 { font-size: 1.05rem; }
+.plugin-desc { color: var(--ink-2); font-size: .9rem; }
+.plugin-meta { font-size: .78rem; }
+.plugin-meta code { background: #ececf2; border-radius: 5px; padding: 1px 6px; font-size: .74rem; }
+.plugin-card .btn-row { margin-top: 6px; }
+
 /* ---- Menu manager ---- */
 .menu-columns { display: grid; gap: 20px; align-content: start; }
 .menu-list { list-style: none; padding: 8px; display: grid; gap: 6px; }

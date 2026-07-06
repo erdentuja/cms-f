@@ -15,5 +15,7 @@ session_start([
 require APP_ROOT . '/app/helpers.php';
 require APP_ROOT . '/app/db.php';
 require APP_ROOT . '/app/auth.php';
+require APP_ROOT . '/app/plugins.php';
 
 db(); // init + install on first run
+plugins_boot(); // bekapcsolt bővítmények betöltése

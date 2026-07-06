@@ -1,0 +1,6 @@
+{
+    "name": "Lightbox galéria",
+    "description": "Kattintásra teljes képernyős nagyítás a galéria blokkok, a kép blokkok és a tartalomba szúrt képek számára. Nyilakkal lapozható, Esc-cel zárható.",
+    "version": "1.0",
+    "author": "Aurora CMS"
+}

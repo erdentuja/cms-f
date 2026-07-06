@@ -20,7 +20,7 @@
     <?php endif; ?>
 
     <div class="container-narrow prose">
-        <?= $post['content'] ?>
+        <?= apply_filters('content', $post['content']) ?>
     </div>
 </article>
 

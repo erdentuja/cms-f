@@ -70,6 +70,11 @@ $routes = [
     ['GET',  '/admin/templates/export/{id}', 'admin_template_export'],
     ['POST', '/admin/templates/import', 'admin_template_import'],
 
+    ['GET',  '/admin/plugins',          'admin_plugins'],
+    ['POST', '/admin/plugins/toggle',   'admin_plugin_toggle'],
+    ['POST', '/admin/plugins/delete',   'admin_plugin_delete'],
+    ['POST', '/admin/plugins/upload',   'admin_plugin_upload'],
+
     ['GET',  '/admin/users',            'admin_users'],
     ['POST', '/admin/users/save',       'admin_user_save'],
     ['POST', '/admin/users/delete',     'admin_user_delete'],
@@ -77,6 +82,9 @@ $routes = [
     ['GET',  '/admin/settings',         'admin_settings'],
     ['POST', '/admin/settings/save',    'admin_settings_save'],
 ];
+
+// Bővítmények saját útvonalakat vehetnek fel a 'routes' filterrel
+$routes = apply_filters('routes', $routes);
 
 foreach ($routes as [$m, $pattern, $handler]) {
     if ($m !== $method) continue;

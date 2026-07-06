@@ -1,0 +1,6 @@
+{
+    "name": "Kapcsolat űrlap",
+    "description": "Illeszd be a [kapcsolat] kódot bármely oldal vagy poszt tartalmába — a helyén kapcsolatfelvételi űrlap jelenik meg. A beérkező üzenetek az admin Üzenetek menüpontja alatt olvashatók.",
+    "version": "1.0",
+    "author": "Aurora CMS"
+}

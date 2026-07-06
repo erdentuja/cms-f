@@ -8,6 +8,16 @@ function admin_render(string $tpl, array $data = []): void {
     echo view('admin/layout', $data);
 }
 
+/** Kész HTML megjelenítése az admin layoutban — bővítmények adminoldalaihoz */
+function admin_render_html(string $title, string $html): void {
+    echo view('admin/layout', [
+        'title' => $title,
+        'user' => auth_user(),
+        'flash' => flash_get(),
+        'content' => $html,
+    ]);
+}
+
 /* ---------- Auth ---------- */
 
 function admin_login_form(): void {
@@ -533,6 +543,114 @@ function admin_template_import(): void {
         ->execute([$name . ' (importált)', json_encode(template_sanitize($json['data']))]);
     flash_set('success', "A(z) „{$name}” sablon importálva.");
     redirect('admin/templates');
+}
+
+/* ---------- Plugins ---------- */
+
+function admin_plugins(): void {
+    require_admin();
+    admin_render('plugins', [
+        'title' => 'Bővítmények',
+        'plugins' => plugins_all(),
+        'errors' => $GLOBALS['plugin_errors'] ?? [],
+    ]);
+}
+
+/** Mappa-név validálás: csak telepített bővítmény hivatkozható */
+function plugin_slug_from_post(): string {
+    $slug = (string)($_POST['slug'] ?? '');
+    if (!preg_match('/^[a-z0-9_-]+$/i', $slug) || !isset(plugins_all()[$slug])) {
+        flash_set('error', 'Ismeretlen bővítmény.');
+        redirect('admin/plugins');
+    }
+    return $slug;
+}
+
+function admin_plugin_toggle(): void {
+    require_admin();
+    csrf_verify();
+    $slug = plugin_slug_from_post();
+    $active = plugins_active();
+    if (in_array($slug, $active, true)) {
+        $active = array_values(array_diff($active, [$slug]));
+        $msg = 'Bővítmény kikapcsolva.';
+    } else {
+        $active[] = $slug;
+        $msg = 'Bővítmény bekapcsolva.';
+    }
+    db()->prepare("INSERT INTO settings (key, value) VALUES ('active_plugins', ?)
+                   ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute([json_encode($active)]);
+    flash_set('success', $msg);
+    redirect('admin/plugins');
+}
+
+function admin_plugin_delete(): void {
+    require_admin();
+    csrf_verify();
+    $slug = plugin_slug_from_post();
+    if (in_array($slug, plugins_active(), true)) {
+        flash_set('error', 'Bekapcsolt bővítmény nem törölhető — előbb kapcsold ki.');
+        redirect('admin/plugins');
+    }
+    rrmdir(plugins_dir() . '/' . $slug);
+    flash_set('success', 'Bővítmény törölve.');
+    redirect('admin/plugins');
+}
+
+function admin_plugin_upload(): void {
+    require_admin();
+    csrf_verify();
+    if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        flash_set('error', 'A fájl feltöltése sikertelen.');
+        redirect('admin/plugins');
+    }
+    $f = $_FILES['file'];
+    if ($f['size'] > 10 * 1024 * 1024) {
+        flash_set('error', 'A bővítmény túl nagy (max. 10 MB).');
+        redirect('admin/plugins');
+    }
+    if (!preg_match('/\.zip$/i', $f['name'])) {
+        flash_set('error', 'Zip fájlt tölts fel.');
+        redirect('admin/plugins');
+    }
+
+    $tmp = APP_ROOT . '/storage/plugin-tmp-' . bin2hex(random_bytes(4));
+    try {
+        zip_extract($f['tmp_name'], $tmp);
+    } catch (\Throwable $e) {
+        rrmdir($tmp);
+        flash_set('error', 'A zip nem csomagolható ki: ' . $e->getMessage());
+        redirect('admin/plugins');
+    }
+
+    // A manifest helye: a zip gyökere, vagy egyetlen gyökérmappa
+    $root = $tmp;
+    $slug = slugify(pathinfo($f['name'], PATHINFO_FILENAME));
+    if (!is_file("$root/plugin.json")) {
+        $subdirs = array_values(array_filter(scandir($tmp), fn($d) => $d[0] !== '.' && is_dir("$tmp/$d")));
+        if (count($subdirs) === 1 && is_file("$tmp/{$subdirs[0]}/plugin.json")) {
+            $root = "$tmp/{$subdirs[0]}";
+            $slug = slugify($subdirs[0]);
+        }
+    }
+    $manifest = plugin_manifest("$root/plugin.json");
+    if ($manifest === null || empty($manifest['name']) || !is_file("$root/plugin.php")) {
+        rrmdir($tmp);
+        flash_set('error', 'Érvénytelen bővítmény: hiányzik a plugin.json (name mezővel) vagy a plugin.php.');
+        redirect('admin/plugins');
+    }
+
+    $dest = plugins_dir() . '/' . $slug;
+    if (!is_dir(plugins_dir())) mkdir(plugins_dir(), 0775, true);
+    $existed = is_dir($dest);
+    if ($existed) rrmdir($dest); // frissítés: régi fájlok cseréje
+    rename($root, $dest);
+    if ($root !== $tmp) rrmdir($tmp);
+
+    flash_set('success', $existed
+        ? "A(z) „{$manifest['name']}” bővítmény frissítve."
+        : "A(z) „{$manifest['name']}” bővítmény telepítve — a listában tudod bekapcsolni.");
+    redirect('admin/plugins');
 }
 
 /* ---------- Users ---------- */

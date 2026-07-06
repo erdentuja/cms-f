@@ -47,6 +47,7 @@ html[data-theme="dark"] {
     document.documentElement.dataset.theme = t;
 })();
 </script>
+<?php do_action('front_head'); ?>
 </head>
 <body>
 <header class="site-header">
@@ -95,5 +96,6 @@ html[data-theme="dark"] {
         <p class="footer-copy"><?= e(setting('footer_text')) ?></p>
     </div>
 </footer>
+<?php do_action('front_footer'); ?>
 </body>
 </html>
