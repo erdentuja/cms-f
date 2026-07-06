@@ -1,5 +1,6 @@
 # Adatbázis (első betöltéskor automatikusan létrejön)
 storage/*.sqlite
+storage/*.zip
 storage/*.sqlite-wal
 storage/*.sqlite-shm
 
