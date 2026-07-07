@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+// PHP-verzió őr — csak régi PHP-n is értelmezhető szintaxissal!
+// (a bootstrap és az app 8.1+ nyelvi elemeket használ, régi PHP-n az fatális hibát adna)
+if (PHP_VERSION_ID < 80100) {
+    http_response_code(500);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<h1>Aurora CMS</h1><p>A futtatáshoz <strong>PHP 8.1 vagy újabb</strong> szükséges — ezen a szerveren jelenleg <strong>PHP ' . PHP_VERSION . '</strong> fut.</p>';
+    echo '<p>A tárhely vezérlőpultjában (cPanel / DirectAdmin / ISPConfig) válts PHP 8.1+, lehetőleg 8.3 verzióra ehhez a mappához.</p>';
+    exit;
+}
+
 // Static file passthrough for the PHP built-in server (php -S ... index.php)
 if (PHP_SAPI === 'cli-server') {
     $p = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -8,7 +18,24 @@ if (PHP_SAPI === 'cli-server') {
     if ($p !== '/' && file_exists($file) && !is_dir($file)) return false;
 }
 
-require __DIR__ . '/app/bootstrap.php';
+// Induláskori hibák (pl. nem írható storage/, hiányzó pdo_sqlite) érthető
+// üzenettel jelenjenek meg üres 500-as oldal helyett; a részletek a naplóba mennek
+try {
+    require __DIR__ . '/app/bootstrap.php';
+} catch (Throwable $bootError) {
+    error_log('Aurora CMS boot error: ' . $bootError->getMessage() . ' @ ' . $bootError->getFile() . ':' . $bootError->getLine());
+    http_response_code(500);
+    header('Content-Type: text/html; charset=utf-8');
+    $hint = 'Ismeretlen indulási hiba — részletek a szerver hibanaplójában.';
+    $msg = $bootError->getMessage();
+    if (stripos($msg, 'could not find driver') !== false) {
+        $hint = 'Hiányzik a <code>pdo_sqlite</code> PHP-bővítmény — kapcsold be a tárhely PHP-beállításainál.';
+    } elseif (stripos($msg, 'unable to open database') !== false || stripos($msg, 'readonly database') !== false || stripos($msg, 'mkdir') !== false) {
+        $hint = 'A <code>storage/</code> mappa nem írható a webszerver számára — adj rá írási jogot (pl. 755/775, megfelelő tulajdonossal).';
+    }
+    echo '<h1>Aurora CMS — indulási hiba</h1><p>' . $hint . '</p>';
+    exit;
+}
 require APP_ROOT . '/app/controllers/front.php';
 require APP_ROOT . '/app/controllers/admin.php';
 

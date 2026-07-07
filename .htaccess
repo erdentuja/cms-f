@@ -1,19 +1,22 @@
-Options -Indexes
-RewriteEngine On
-RewriteBase /
+# Aurora CMS — tárhelybiztos szabályok.
+# Szándékosan nincs "Options" direktíva (sok osztott tárhelyen 500-at okoz)
+# és nincs "RewriteBase" sem: a relatív cél miatt almappából is működik.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
 
-# Protect app internals
-RewriteRule ^(app|storage)/ - [F,L]
-RewriteRule ^plugins/.*\.php$ - [F,L]
-RewriteRule ^uploads/.*\.(php[0-9]?|phtml|phar|cgi|pl|asp|aspx|jsp|sh|svg)$ - [F,L]
+    # Belső mappák és veszélyes fájlok védelme
+    RewriteRule ^(app|storage)/ - [F,L]
+    RewriteRule ^plugins/.*\.php$ - [F,L]
+    RewriteRule ^uploads/.*\.(php[0-9]?|phtml|phar|cgi|pl|asp|aspx|jsp|sh|svg)$ - [F,L]
 
-# Serve existing files directly
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+    # Létező fájlok kiszolgálása közvetlenül (a mappakérések a front controllerre
+    # mennek, így mappalistázás sem fordulhat elő)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
 
-# Everything else through the front controller
-RewriteRule ^ index.php [L]
+    # Minden más a front controlleren át
+    RewriteRule ^ index.php [L]
+</IfModule>
 
 # Cache static assets
 <IfModule mod_expires.c>
