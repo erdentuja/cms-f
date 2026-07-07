@@ -25,6 +25,10 @@ function db_migrate(PDO $db): void {
     if (!in_array('builder', $pageCols, true)) $db->exec('ALTER TABLE pages ADD COLUMN builder INTEGER NOT NULL DEFAULT 0');
     if (!in_array('blocks', $pageCols, true)) $db->exec("ALTER TABLE pages ADD COLUMN blocks TEXT NOT NULL DEFAULT '[]'");
 
+    $postCols = array_column($db->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
+    if (!in_array('builder', $postCols, true)) $db->exec('ALTER TABLE posts ADD COLUMN builder INTEGER NOT NULL DEFAULT 0');
+    if (!in_array('blocks', $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN blocks TEXT NOT NULL DEFAULT '[]'");
+
     $db->exec("CREATE TABLE IF NOT EXISTS menu_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         label TEXT NOT NULL,

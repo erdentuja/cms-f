@@ -1,6 +1,13 @@
+<?php
+$builderMode = !empty($post['builder']);
+$content = $post['content'] ?? '';
+$blocksData = json_decode($post['blocks'] ?? '[]', true) ?: [];
+$previewAction = base_url('admin/posts/preview');
+?>
 <form method="post" action="<?= base_url('admin/posts/save') ?>" class="edit-layout" id="editForm">
     <?= csrf_field() ?>
     <input type="hidden" name="id" value="<?= (int)($post['id'] ?? 0) ?>">
+    <input type="hidden" name="builder" id="builderMode" value="<?= $builderMode ? 1 : 0 ?>">
 
     <div class="edit-main">
         <header class="page-head">
@@ -13,10 +20,7 @@
         <input class="input input-title" type="text" name="title" placeholder="A poszt címe…" required
                value="<?= e($post['title'] ?? '') ?>">
 
-        <div class="editor-wrap panel">
-            <div id="editor"><?= $post['content'] ?? '' ?></div>
-            <textarea name="content" id="contentField" hidden></textarea>
-        </div>
+        <?php require __DIR__ . '/_editor-content.php'; ?>
 
         <label class="field">
             <span>Kivonat <em class="muted">(a listákban és a keresőknek megjelenő rövid leírás)</em></span>
@@ -39,6 +43,8 @@
                 <input class="input" type="text" name="slug" value="<?= e($post['slug'] ?? '') ?>" placeholder="automatikus a címből">
             </label>
             <button class="btn btn-primary btn-block" type="submit">Mentés</button>
+            <button class="btn btn-ghost btn-block" type="button" id="previewBtn" hidden>Előnézet új lapon</button>
+            <p class="mode-hint" id="modeHint"></p>
             <?php if (($post['status'] ?? '') === 'published'): ?>
                 <a class="link center-link" href="<?= base_url('post/' . e($post['slug'])) ?>" target="_blank">Megtekintés az oldalon →</a>
             <?php endif; ?>
@@ -78,33 +84,4 @@
 <?php require __DIR__ . '/_media-picker.php'; ?>
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-<script>
-const quill = new Quill('#editor', {
-    theme: 'snow',
-    placeholder: 'Kezdj el írni…',
-    modules: {
-        toolbar: {
-            container: [
-                [{ header: [2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                ['link', 'image'],
-                ['clean'],
-            ],
-            handlers: {
-                image() {
-                    openMediaPicker(url => {
-                        const range = quill.getSelection(true);
-                        quill.insertEmbed(range.index, 'image', url);
-                    }, true);
-                },
-            },
-        },
-    },
-});
-document.getElementById('editForm').addEventListener('submit', () => {
-    // getSemanticHTML() a szóközöket &nbsp;-re cseréli — visszaalakítjuk
-    document.getElementById('contentField').value = quill.getSemanticHTML().replaceAll('&nbsp;', ' ');
-});
-</script>
+<?php require __DIR__ . '/_editor-scripts.php'; ?>

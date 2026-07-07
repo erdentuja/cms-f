@@ -212,7 +212,7 @@ function template_fonts_href(array $tpl): string {
     return 'https://fonts.googleapis.com/css2?' . implode('&', $parts) . '&display=swap';
 }
 
-/* ---------- Blokk-alapú oldalépítő ---------- */
+/* ---------- Blokkszerkesztő (oldalak és posztok is használják) ---------- */
 
 /** Blokktípusok az admin felülethez: [type => felirat] */
 function block_types(): array {

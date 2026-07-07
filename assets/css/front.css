@@ -205,7 +205,7 @@ html[data-theme="dark"] .ico-moon { display: none; }
 .prose pre { background: #16161d; color: #e6e6ef; padding: 20px 24px; border-radius: 14px; overflow-x: auto; margin-bottom: 1.35em; }
 .prose pre code { background: none; padding: 0; }
 
-/* ---- Oldalépítő blokkok ---- */
+/* ---- Blokkszerkesztő blokkok ---- */
 .btn-outline { background: transparent; border: 2px solid var(--ink); color: var(--ink); }
 .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
 .blocks { padding: 10px 0 60px; }

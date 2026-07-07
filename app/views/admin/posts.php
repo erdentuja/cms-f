@@ -28,7 +28,10 @@
         <tbody>
             <?php foreach ($posts as $p): ?>
             <tr>
-                <td><a class="row-title" href="<?= base_url('admin/posts/' . $p['id']) ?>"><?= e($p['title']) ?></a></td>
+                <td>
+                    <a class="row-title" href="<?= base_url('admin/posts/' . $p['id']) ?>"><?= e($p['title']) ?></a>
+                    <?php if (!empty($p['builder'])): ?><span class="badge badge-gray">Blokkszerkesztő</span><?php endif; ?>
+                </td>
                 <td><?php if ($p['cat_name']): ?><span class="cat-dot" style="--c:<?= e($p['cat_color']) ?>"><?= e($p['cat_name']) ?></span><?php else: ?><span class="muted">—</span><?php endif; ?></td>
                 <td><?= e($p['author'] ?? '—') ?></td>
                 <td><span class="badge <?= $p['status'] === 'published' ? 'badge-green' : 'badge-gray' ?>"><?= $p['status'] === 'published' ? 'Publikált' : 'Vázlat' ?></span></td>

@@ -62,12 +62,14 @@ function front_post(string $slug): void {
                          WHERE p.status='published' AND p.id != ? AND (p.category_id = ? OR ? IS NULL)
                          ORDER BY p.published_at DESC LIMIT 3");
     $st->execute([$post['id'], $post['category_id'], $post['category_id']]);
+    $blocks = $post['builder'] ? (json_decode($post['blocks'], true) ?: []) : [];
 
     front_render('post', [
         'title' => $post['title'],
         'post' => $post,
+        'blocks' => $blocks,
         'related' => $st->fetchAll(),
-        'metaDescription' => $post['excerpt'] ?: excerpt_of($post['content']),
+        'metaDescription' => $post['excerpt'] ?: excerpt_of($post['builder'] ? blocks_render($blocks) : $post['content']),
         'ogType' => 'article',
         'ogImage' => $post['featured_image'] ?: null,
     ]);

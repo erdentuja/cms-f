@@ -285,7 +285,7 @@ select.input { cursor: pointer; }
 .editor-wrap .ql-editor { min-height: 420px; padding: 24px 28px; line-height: 1.7; }
 .editor-wrap .ql-editor.ql-blank::before { color: var(--ink-3); font-style: normal; left: 28px; }
 
-/* ---- Oldalépítő ---- */
+/* ---- Blokkszerkesztő ---- */
 .editor-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
 .tab-btn {
     padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line);

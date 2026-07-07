@@ -117,7 +117,7 @@ function galeria_admin(): void {
         <?php else: ?>
         <div class="empty-state">
             <p>Még nincs galéria.</p>
-            <p class="muted">Hozz létre egyet a jobb oldali űrlappal, majd illeszd be a <code>[galeria id=N]</code> shortcode-ot egy oldal vagy poszt tartalmába — akár az oldalépítő szöveg- vagy HTML-blokkjába is.</p>
+            <p class="muted">Hozz létre egyet a jobb oldali űrlappal, majd illeszd be a <code>[galeria id=N]</code> shortcode-ot egy oldal vagy poszt tartalmába — akár a blokkszerkesztő szöveg- vagy HTML-blokkjába is.</p>
         </div>
         <?php endif; ?>
     </div>

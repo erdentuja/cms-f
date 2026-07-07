@@ -1,3 +1,4 @@
+<?php if (!empty($preview)): ?><div class="preview-bar">Előnézet — a módosítások nincsenek elmentve</div><?php endif; ?>
 <article class="article">
     <header class="article-header container-narrow">
         <?php if (!empty($post['cat_name'])): ?>
@@ -9,19 +10,23 @@
             <span class="dot">·</span>
             <time><?= hu_date($post['published_at']) ?></time>
             <span class="dot">·</span>
-            <span><?= reading_time($post['content']) ?> perc olvasás</span>
+            <span><?= reading_time(!empty($post['builder']) ? blocks_render($blocks) : $post['content']) ?> perc olvasás</span>
         </div>
     </header>
 
-    <?php if ($post['featured_image']): ?>
+    <?php if (!empty($post['featured_image'])): ?>
         <div class="container article-cover">
             <img src="<?= base_url(e($post['featured_image'])) ?>" alt="<?= e($post['title']) ?>">
         </div>
     <?php endif; ?>
 
-    <div class="container-narrow prose">
-        <?= apply_filters('content', $post['content']) ?>
-    </div>
+    <?php if (!empty($post['builder'])): ?>
+        <div class="blocks"><?= apply_filters('content', blocks_render($blocks)) ?></div>
+    <?php else: ?>
+        <div class="container-narrow prose">
+            <?= apply_filters('content', $post['content']) ?>
+        </div>
+    <?php endif; ?>
 </article>
 
 <?php if (!empty($related)): ?>

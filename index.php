@@ -44,6 +44,7 @@ $routes = [
     ['GET',  '/admin/posts/new',        'admin_post_form'],
     ['GET',  '/admin/posts/{id}',       'admin_post_form'],
     ['POST', '/admin/posts/save',       'admin_post_save'],
+    ['POST', '/admin/posts/preview',    'admin_post_preview'],
     ['POST', '/admin/posts/delete',     'admin_post_delete'],
 
     ['GET',  '/admin/pages',            'admin_pages'],

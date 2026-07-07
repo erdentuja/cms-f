@@ -87,7 +87,7 @@ function admin_post_form(string $id = ''): void {
         if (!$post) { flash_set('error', 'A poszt nem található.'); redirect('admin/posts'); }
     }
     $cats = db()->query('SELECT * FROM categories ORDER BY name')->fetchAll();
-    admin_render('post-edit', ['title' => $post ? 'Poszt szerkesztése' : 'Új poszt', 'post' => $post, 'cats' => $cats]);
+    admin_render('post-edit', ['title' => $post ? 'Poszt szerkesztése' : 'Új poszt', 'post' => $post, 'cats' => $cats, 'blockTypes' => block_types()]);
 }
 
 function admin_post_save(): void {
@@ -101,26 +101,51 @@ function admin_post_save(): void {
     $slug = unique_slug(db(), 'posts', slugify($slug !== '' ? $slug : $title), $id);
     $status = in_array($_POST['status'] ?? '', ['published', 'draft'], true) ? $_POST['status'] : 'draft';
     $catId = (int)($_POST['category_id'] ?? 0) ?: null;
+    $builder = !empty($_POST['builder']) ? 1 : 0;
+    $blocksJson = json_decode((string)($_POST['blocks'] ?? '[]'), true);
+    $blocks = json_encode(blocks_sanitize(is_array($blocksJson) ? $blocksJson : []));
 
     $data = [
         $title, $slug, trim((string)($_POST['excerpt'] ?? '')), (string)($_POST['content'] ?? ''),
-        trim((string)($_POST['featured_image'] ?? '')), $catId, $status,
+        trim((string)($_POST['featured_image'] ?? '')), $catId, $status, $builder, $blocks,
     ];
 
     if ($id) {
-        $st = db()->prepare("UPDATE posts SET title=?, slug=?, excerpt=?, content=?, featured_image=?, category_id=?, status=?,
+        $st = db()->prepare("UPDATE posts SET title=?, slug=?, excerpt=?, content=?, featured_image=?, category_id=?, status=?, builder=?, blocks=?,
                              updated_at=datetime('now','localtime'),
                              published_at=CASE WHEN ?='published' AND published_at IS NULL THEN datetime('now','localtime') ELSE published_at END
                              WHERE id=?");
         $st->execute([...$data, $status, $id]);
     } else {
-        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, author_id, published_at)
-                             VALUES (?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
+        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, builder, blocks, author_id, published_at)
+                             VALUES (?,?,?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
         $st->execute([...$data, $user['id'], $status]);
         $id = (int)db()->lastInsertId();
     }
-    flash_set('success', 'A poszt mentve.');
+    flash_set('success', $builder ? 'A poszt mentve — a látogatók a blokkszerkesztő tartalmát látják.'
+                                  : 'A poszt mentve — a látogatók a klasszikus szerkesztő tartalmát látják.');
     redirect("admin/posts/$id");
+}
+
+/** Blokkos poszt élő előnézete mentés nélkül (POST-olt blokkokból) */
+function admin_post_preview(): void {
+    require_login();
+    csrf_verify();
+    $blocksJson = json_decode((string)($_POST['blocks'] ?? '[]'), true);
+    $blocks = blocks_sanitize(is_array($blocksJson) ? $blocksJson : []);
+    $title = trim((string)($_POST['title'] ?? '')) ?: 'Előnézet';
+    $user = auth_user();
+    front_render('post', [
+        'title' => $title,
+        'post' => [
+            'title' => $title, 'builder' => 1, 'content' => '', 'featured_image' => '',
+            'cat_name' => '', 'cat_slug' => '', 'cat_color' => '',
+            'author' => $user['name'] ?? '', 'published_at' => date('Y-m-d H:i:s'),
+        ],
+        'blocks' => $blocks,
+        'related' => [],
+        'preview' => true,
+    ]);
 }
 
 function admin_post_delete(): void {
@@ -176,7 +201,7 @@ function admin_page_save(): void {
         $st->execute($data);
         $id = (int)db()->lastInsertId();
     }
-    flash_set('success', $builder ? 'Az oldal mentve — a látogatók az oldalépítő tartalmát látják.'
+    flash_set('success', $builder ? 'Az oldal mentve — a látogatók a blokkszerkesztő tartalmát látják.'
                                   : 'Az oldal mentve — a látogatók a klasszikus szerkesztő tartalmát látják.');
     redirect("admin/pages/$id");
 }
