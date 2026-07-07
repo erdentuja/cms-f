@@ -295,7 +295,22 @@ select.input { cursor: pointer; }
 #classicPane[hidden], #builderPane[hidden] { display: none; }
 .builder-toolbar { padding: 18px 22px 14px; border-bottom: 1px solid var(--line); }
 .builder-toolbar .muted { display: block; margin-bottom: 10px; font-size: .84rem; }
-.block-add-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.block-add-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(94px, 1fr)); gap: 8px; }
+.block-tile {
+    display: grid; justify-items: center; align-content: start; gap: 7px;
+    padding: 13px 6px 11px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 11px;
+    font: inherit; font-size: .74rem; font-weight: 600; color: var(--ink-2);
+    line-height: 1.2; text-align: center; cursor: pointer;
+    transition: border-color .15s, color .15s, transform .15s, box-shadow .15s;
+}
+.block-tile svg { width: 22px; height: 22px; color: var(--ink-3); transition: color .15s; }
+.block-tile:hover {
+    border-color: var(--accent); color: var(--accent);
+    transform: translateY(-2px); box-shadow: var(--shadow);
+}
+.block-tile:hover svg { color: var(--accent); }
+.block-tile:active { transform: translateY(0); }
 .block-list { list-style: none; padding: 16px; display: grid; gap: 14px; }
 .block-card {
     background: #fafafd; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;

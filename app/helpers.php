@@ -233,6 +233,25 @@ function block_types(): array {
     ];
 }
 
+/** Blokktípus-ikonok az admin felülethez: [type => SVG path] (24×24, stroke stílus) */
+function block_icons(): array {
+    return [
+        'heading'  => 'M6 4v16M18 4v16M6 12h12',
+        'text'     => 'M4 6h16M4 10h16M4 14h16M4 18h9',
+        'image'    => 'M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6M8.5 9a1 1 0 1 0 0-.01',
+        'button'   => 'M2 10a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM8 12h8',
+        'columns'  => 'M3 5h7v14H3zM14 5h7v14h-7z',
+        'gallery'  => 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+        'quote'    => 'M10 7H6v5h4zM10 12c0 3-1 4-3 5M18 7h-4v5h4zM18 12c0 3-1 4-3 5',
+        'faq'      => 'M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9M9.5 9.5A2.5 2.5 0 1 1 12 12v1.5M12 17h.01',
+        'counters' => 'M4 20v-6M9 20V10M14 20V6M19 20V3',
+        'video'    => 'M3 5h18v14H3zM10 9l5 3-5 3z',
+        'map'      => 'M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11zM12 12a2 2 0 1 0 0-.01',
+        'spacer'   => 'M12 4v16M8 8l4-4 4 4M8 16l4 4 4-4',
+        'html'     => 'M9 6 3 12l6 6M15 6l6 6-6 6',
+    ];
+}
+
 /** Alapértelmezett elrendezés blokktípusonként */
 function block_layout_defaults(string $type): array {
     $wide = in_array($type, ['columns', 'gallery', 'html', 'counters'], true);

@@ -16,8 +16,11 @@
     <div class="builder-toolbar">
         <span class="muted">Blokk hozzáadása:</span>
         <div class="block-add-buttons">
-            <?php foreach ($blockTypes as $type => $label): ?>
-                <button type="button" class="btn btn-ghost btn-sm" data-add="<?= e($type) ?>"><?= e($label) ?></button>
+            <?php $icons = block_icons(); foreach ($blockTypes as $type => $label): ?>
+                <button type="button" class="block-tile" data-add="<?= e($type) ?>" title="<?= e($label) ?>">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="<?= $icons[$type] ?? 'M21 8l-9-5-9 5 9 5zM3 8v8l9 5 9-5V8M12 13v8' ?>"/></svg>
+                    <span><?= e($label) ?></span>
+                </button>
             <?php endforeach; ?>
         </div>
     </div>
