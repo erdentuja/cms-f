@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <?php $tpl = active_template(); ?>
 <link href="<?= e(template_fonts_href($tpl)) ?>" rel="stylesheet">
-<link rel="stylesheet" href="<?= base_url('assets/css/front.css') ?>?v=1">
+<link rel="stylesheet" href="<?= base_url('assets/css/front.css') ?>?v=5">
 <style>
 :root {
     --accent: <?= $tpl['accent'] ?>;

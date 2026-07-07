@@ -68,27 +68,18 @@ function front_post(string $slug): void {
     $sidebar = trim((string)($post['sidebar'] ?? ''));
     if (!in_array($sidebar, ['left', 'right', 'none'], true)) $sidebar = setting('post_sidebar', 'none');
     if (!in_array($sidebar, ['left', 'right'], true)) $sidebar = 'none';
-    $sideData = null;
-    if ($sidebar !== 'none') {
-        $recent = db()->prepare("SELECT title, slug, published_at FROM posts
-                                 WHERE status='published' AND id != ? ORDER BY published_at DESC LIMIT 5");
-        $recent->execute([$post['id']]);
-        $popular = db()->prepare("SELECT title, slug, views FROM posts
-                                  WHERE status='published' AND id != ? ORDER BY views DESC LIMIT 5");
-        $popular->execute([$post['id']]);
-        $sideData = [
-            'categories' => front_categories(),
-            'recent' => $recent->fetchAll(),
-            'popular' => $popular->fetchAll(),
-        ];
-    }
+    $sidebarSticky = trim((string)($post['sidebar_sticky'] ?? ''));
+    if (!in_array($sidebarSticky, ['0', '1'], true)) $sidebarSticky = setting('post_sidebar_sticky', '0');
+    $sidebarSticky = $sidebarSticky === '1';
+    $sidebarContent = $sidebar !== 'none' ? setting('post_sidebar_content', sidebar_content_default()) : '';
 
     front_render('post', [
         'title' => $post['title'],
         'post' => $post,
         'blocks' => $blocks,
         'sidebar' => $sidebar,
-        'sideData' => $sideData,
+        'sidebarSticky' => $sidebarSticky,
+        'sidebarContent' => $sidebarContent,
         'related' => $st->fetchAll(),
         'metaDescription' => $post['excerpt'] ?: excerpt_of($post['builder'] ? blocks_render($blocks) : $post['content']),
         'ogType' => 'article',

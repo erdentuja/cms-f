@@ -97,6 +97,45 @@ function setting(string $key, string $default = ''): string {
     return $cache[$key] ?? $default;
 }
 
+function sidebar_widget_defaults(): array {
+    return [
+        'search' => ['label' => 'Keresés', 'title' => 'Keresés', 'enabled' => 1, 'order' => 10, 'content' => ''],
+        'categories' => ['label' => 'Kategóriák', 'title' => 'Kategóriák', 'enabled' => 1, 'order' => 20, 'content' => ''],
+        'recent' => ['label' => 'Friss posztok', 'title' => 'Friss posztok', 'enabled' => 1, 'order' => 30, 'content' => ''],
+        'popular' => ['label' => 'Népszerű', 'title' => 'Népszerű', 'enabled' => 1, 'order' => 40, 'content' => ''],
+        'custom' => ['label' => 'Egyedi szöveg', 'title' => 'Info', 'enabled' => 0, 'order' => 50, 'content' => ''],
+    ];
+}
+
+function sidebar_content_default(): string {
+    return "<div class=\"widget widget-search\">\n<h3>Keresés</h3>\n[kereses]\n</div>\n\n"
+         . "<div class=\"widget widget-cats\">\n<h3>Kategóriák</h3>\n[kategoriak]\n</div>\n\n"
+         . "<div class=\"widget\">\n<h3>Friss posztok</h3>\n[friss-posztok limit=5]\n</div>\n\n"
+         . "<div class=\"widget\">\n<h3>Népszerű</h3>\n[nepszeru limit=5]\n</div>";
+}
+
+function sidebar_widgets_config(): array {
+    $defaults = sidebar_widget_defaults();
+    $saved = json_decode(setting('post_sidebar_widgets', '[]'), true);
+    $saved = is_array($saved) ? $saved : [];
+    $widgets = [];
+    foreach ($defaults as $key => $def) {
+        $hasSaved = array_key_exists($key, $saved) && is_array($saved[$key]);
+        $row = $hasSaved ? $saved[$key] : $def;
+        $title = trim((string)($row['title'] ?? $def['title']));
+        $widgets[$key] = [
+            'key' => $key,
+            'label' => $def['label'],
+            'title' => $title !== '' ? $title : $def['title'],
+            'enabled' => !empty($row['enabled']) ? 1 : 0,
+            'order' => max(0, min(999, (int)($row['order'] ?? $def['order']))),
+            'content' => trim((string)($row['content'] ?? $def['content'])),
+        ];
+    }
+    uasort($widgets, fn($a, $b) => $a['order'] <=> $b['order']);
+    return $widgets;
+}
+
 /** Hungarian date format */
 function hu_date(?string $dt): string {
     if (!$dt) return '';

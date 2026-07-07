@@ -283,7 +283,11 @@ html[data-theme="dark"] .blk-row.bg-soft { background: color-mix(in srgb, var(--
 .post-main { min-width: 0; }
 .post-layout .container-narrow { padding-left: 0; padding-right: 0; }
 .post-layout .article-cover { padding-left: 0; padding-right: 0; }
-.post-sidebar { display: grid; gap: 18px; margin: 72px 0 60px; position: sticky; top: 24px; }
+.post-sidebar { margin: 72px 0 60px; min-width: 0; }
+.post-sidebar-inner { display: grid; gap: 18px; }
+.post-layout.sidebar-sticky .post-sidebar { position: sticky; top: 92px; }
+.post-layout.sidebar-static .post-sidebar { position: static; }
+.post-layout.sidebar-static .post-sidebar-inner { position: static; }
 .widget {
     background: var(--surface); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 20px 22px;
@@ -294,6 +298,7 @@ html[data-theme="dark"] .blk-row.bg-soft { background: color-mix(in srgb, var(--
 .widget li a { font-weight: 600; font-size: .92rem; line-height: 1.35; }
 .widget li a:hover { color: var(--accent); }
 .widget .muted-line { color: var(--ink-3); font-size: .78rem; }
+.widget-text { color: var(--ink-2); font-size: .92rem; line-height: 1.55; }
 .widget-cats li a { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .widget-cats .cnt {
     background: color-mix(in srgb, var(--accent) 12%, var(--surface));
@@ -310,7 +315,7 @@ html[data-theme="dark"] .blk-row.bg-soft { background: color-mix(in srgb, var(--
 @media (max-width: 900px) {
     .post-layout, .post-layout.sidebar-left { grid-template-columns: 1fr; gap: 0; }
     .post-layout.sidebar-left .post-main { order: 0; }
-    .post-sidebar { position: static; margin: 0 0 50px; }
+    .post-sidebar { margin: 0 0 50px; }
 }
 
 /* ---- Related ---- */
@@ -338,6 +343,9 @@ html[data-theme="dark"] .blk-row.bg-soft { background: color-mix(in srgb, var(--
 
 /* ---- Modulok (shortcode-ok) ---- */
 .mod-search { display: flex; gap: 10px; margin: 18px 0; }
+.widget .mod-search, .widget .mod-posts, .widget .mod-cats { margin: 0; }
+.widget .mod-search { flex-direction: column; }
+.widget .mod-search .btn { margin-top: 0; justify-content: center; }
 .mod-search input {
     flex: 1; font: inherit; padding: 11px 16px; border-radius: var(--radius);
     border: 1px solid var(--line); background: var(--surface); color: var(--ink);

@@ -21,12 +21,21 @@ function db(): PDO {
 
 /** Idempotens migrációk már létező adatbázisokhoz */
 function db_migrate(PDO $db): void {
+    if ($db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")->fetchColumn()) {
+        $hasSuper = (int)$db->query("SELECT COUNT(*) FROM users WHERE role='superadmin'")->fetchColumn();
+        if (!$hasSuper) {
+            $firstAdmin = $db->query("SELECT id FROM users WHERE role='admin' ORDER BY id LIMIT 1")->fetchColumn();
+            if ($firstAdmin) $db->prepare("UPDATE users SET role='superadmin' WHERE id=?")->execute([$firstAdmin]);
+        }
+    }
+
     $pageCols = array_column($db->query('PRAGMA table_info(pages)')->fetchAll(), 'name');
     if (!in_array('builder', $pageCols, true)) $db->exec('ALTER TABLE pages ADD COLUMN builder INTEGER NOT NULL DEFAULT 0');
     if (!in_array('blocks', $pageCols, true)) $db->exec("ALTER TABLE pages ADD COLUMN blocks TEXT NOT NULL DEFAULT '[]'");
 
     $postCols = array_column($db->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
     if (!in_array('sidebar', $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN sidebar TEXT NOT NULL DEFAULT ''");
+    if (!in_array('sidebar_sticky', $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN sidebar_sticky TEXT NOT NULL DEFAULT ''");
 
     $postCols = array_column($db->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
     if (!in_array('builder', $postCols, true)) $db->exec('ALTER TABLE posts ADD COLUMN builder INTEGER NOT NULL DEFAULT 0');
@@ -145,13 +154,16 @@ function db_install(PDO $db): void {
 
     // Seed
     $db->prepare('INSERT INTO users (name, email, password, role) VALUES (?,?,?,?)')
-       ->execute(['Adminisztrátor', 'admin@cms.local', password_hash('admin123', PASSWORD_DEFAULT), 'admin']);
+       ->execute(['Szuperadmin', 'admin@cms.local', password_hash('admin123', PASSWORD_DEFAULT), 'superadmin']);
 
     $settings = [
         'site_name' => 'Aurora CMS',
         'tagline' => 'Modern, gyors és gyönyörű tartalomkezelés',
         'description' => 'Egy villámgyors, modern CMS rendszer.',
         'posts_per_page' => '9',
+        'post_sidebar_sticky' => '0',
+        'post_sidebar_widgets' => json_encode(sidebar_widget_defaults()),
+        'post_sidebar_content' => sidebar_content_default(),
         'footer_text' => '© ' . date('Y') . ' Aurora CMS. Minden jog fenntartva.',
     ];
     $st = $db->prepare('INSERT INTO settings (key, value) VALUES (?,?)');

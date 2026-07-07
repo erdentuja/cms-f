@@ -38,9 +38,34 @@ function require_login(): array {
 
 function require_admin(): array {
     $u = require_login();
-    if ($u['role'] !== 'admin') {
+    if (!in_array($u['role'], ['admin', 'superadmin'], true)) {
         flash_set('error', 'Ehhez a művelethez adminisztrátori jogosultság szükséges.');
         redirect('admin');
     }
     return $u;
+}
+
+function require_superadmin(): array {
+    $u = require_login();
+    if (($u['role'] ?? '') !== 'superadmin') {
+        flash_set('error', 'Ehhez a művelethez szuperadmin jogosultság szükséges.');
+        redirect('admin');
+    }
+    return $u;
+}
+
+function is_admin_role(?string $role): bool {
+    return in_array($role, ['admin', 'superadmin'], true);
+}
+
+function is_superadmin_role(?string $role): bool {
+    return $role === 'superadmin';
+}
+
+function role_label(?string $role): string {
+    return match ($role) {
+        'superadmin' => 'Szuperadmin',
+        'admin' => 'Adminisztrátor',
+        default => 'Szerkesztő',
+    };
 }

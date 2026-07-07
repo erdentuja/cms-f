@@ -12,6 +12,7 @@
             <tbody>
                 <?php foreach ($users as $u): ?>
                 <tr>
+                    <?php $canManageUser = is_superadmin_role($user['role'] ?? null) || $u['role'] !== 'superadmin'; ?>
                     <td>
                         <span class="user-cell">
                             <span class="avatar sm"><?= e(mb_strtoupper(mb_substr($u['name'], 0, 1))) ?></span>
@@ -20,9 +21,10 @@
                         </span>
                     </td>
                     <td class="muted"><?= e($u['email']) ?></td>
-                    <td><span class="badge <?= $u['role'] === 'admin' ? 'badge-purple' : 'badge-gray' ?>"><?= $u['role'] === 'admin' ? 'Adminisztrátor' : 'Szerkesztő' ?></span></td>
+                    <td><span class="badge <?= $u['role'] === 'editor' ? 'badge-gray' : 'badge-purple' ?>"><?= e(role_label($u['role'])) ?></span></td>
                     <td class="muted"><?= e(substr($u['created_at'], 0, 10)) ?></td>
                     <td class="row-actions">
+                        <?php if ($canManageUser): ?>
                         <button class="icon-btn" type="button" title="Szerkesztés"
                                 onclick='editUser(<?= json_encode(['id'=>$u['id'],'name'=>$u['name'],'email'=>$u['email'],'role'=>$u['role']], JSON_HEX_APOS) ?>)'>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
@@ -35,6 +37,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
                             </button>
                         </form>
+                        <?php endif; ?>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -61,6 +64,9 @@
                 <select class="input" name="role" id="userRole">
                     <option value="editor">Szerkesztő</option>
                     <option value="admin">Adminisztrátor</option>
+                    <?php if (is_superadmin_role($user['role'] ?? null)): ?>
+                    <option value="superadmin">Szuperadmin</option>
+                    <?php endif; ?>
                 </select>
             </label>
             <label class="field">

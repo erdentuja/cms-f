@@ -105,21 +105,22 @@ function admin_post_save(): void {
     $blocksJson = json_decode((string)($_POST['blocks'] ?? '[]'), true);
     $blocks = json_encode(blocks_sanitize(is_array($blocksJson) ? $blocksJson : []));
     $sidebar = in_array($_POST['sidebar'] ?? '', ['none', 'left', 'right'], true) ? $_POST['sidebar'] : '';
+    $sidebarSticky = in_array($_POST['sidebar_sticky'] ?? '', ['0', '1'], true) ? $_POST['sidebar_sticky'] : '';
 
     $data = [
         $title, $slug, trim((string)($_POST['excerpt'] ?? '')), (string)($_POST['content'] ?? ''),
-        trim((string)($_POST['featured_image'] ?? '')), $catId, $status, $builder, $blocks, $sidebar,
+        trim((string)($_POST['featured_image'] ?? '')), $catId, $status, $builder, $blocks, $sidebar, $sidebarSticky,
     ];
 
     if ($id) {
-        $st = db()->prepare("UPDATE posts SET title=?, slug=?, excerpt=?, content=?, featured_image=?, category_id=?, status=?, builder=?, blocks=?, sidebar=?,
+        $st = db()->prepare("UPDATE posts SET title=?, slug=?, excerpt=?, content=?, featured_image=?, category_id=?, status=?, builder=?, blocks=?, sidebar=?, sidebar_sticky=?,
                              updated_at=datetime('now','localtime'),
                              published_at=CASE WHEN ?='published' AND published_at IS NULL THEN datetime('now','localtime') ELSE published_at END
                              WHERE id=?");
         $st->execute([...$data, $status, $id]);
     } else {
-        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, builder, blocks, sidebar, author_id, published_at)
-                             VALUES (?,?,?,?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
+        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, builder, blocks, sidebar, sidebar_sticky, author_id, published_at)
+                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
         $st->execute([...$data, $user['id'], $status]);
         $id = (int)db()->lastInsertId();
     }
@@ -136,6 +137,11 @@ function admin_post_preview(): void {
     $blocks = blocks_sanitize(is_array($blocksJson) ? $blocksJson : []);
     $title = trim((string)($_POST['title'] ?? '')) ?: 'Előnézet';
     $user = auth_user();
+    $sidebar = in_array($_POST['sidebar'] ?? '', ['left', 'right', 'none'], true) ? $_POST['sidebar'] : setting('post_sidebar', 'none');
+    if (!in_array($sidebar, ['left', 'right'], true)) $sidebar = 'none';
+    $sidebarSticky = in_array($_POST['sidebar_sticky'] ?? '', ['0', '1'], true) ? $_POST['sidebar_sticky'] : setting('post_sidebar_sticky', '0');
+    $sidebarSticky = $sidebarSticky === '1';
+    $sidebarContent = $sidebar !== 'none' ? setting('post_sidebar_content', sidebar_content_default()) : '';
     front_render('post', [
         'title' => $title,
         'post' => [
@@ -144,6 +150,9 @@ function admin_post_preview(): void {
             'author' => $user['name'] ?? '', 'published_at' => date('Y-m-d H:i:s'),
         ],
         'blocks' => $blocks,
+        'sidebar' => $sidebar,
+        'sidebarSticky' => $sidebarSticky,
+        'sidebarContent' => $sidebarContent,
         'related' => [],
         'preview' => true,
     ]);
@@ -576,7 +585,7 @@ function admin_template_import(): void {
 /* ---------- Plugins ---------- */
 
 function admin_plugins(): void {
-    require_admin();
+    require_superadmin();
     admin_render('plugins', [
         'title' => 'Bővítmények',
         'plugins' => plugins_all(),
@@ -587,15 +596,37 @@ function admin_plugins(): void {
 /** Mappa-név validálás: csak telepített bővítmény hivatkozható */
 function plugin_slug_from_post(): string {
     $slug = (string)($_POST['slug'] ?? '');
-    if (!preg_match('/^[a-z0-9_-]+$/i', $slug) || !isset(plugins_all()[$slug])) {
+    try {
+        return plugin_resolve_slug($slug);
+    } catch (\Throwable) {
         flash_set('error', 'Ismeretlen bővítmény.');
         redirect('admin/plugins');
     }
-    return $slug;
+}
+
+function admin_plugin_export(string $slug): void {
+    require_superadmin();
+    try {
+        $slug = plugin_resolve_slug($slug);
+        $tmp = APP_ROOT . '/storage/' . $slug . '-export-' . bin2hex(random_bytes(4)) . '.zip';
+        zip_create_from_dir(plugins_dir() . '/' . $slug, $tmp, $slug);
+    } catch (\Throwable $e) {
+        flash_set('error', 'A bővítmény exportja sikertelen: ' . $e->getMessage());
+        redirect('admin/plugins');
+    }
+
+    while (ob_get_level()) ob_end_clean();
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename="' . $slug . '.zip"');
+    header('Content-Length: ' . filesize($tmp));
+    header('X-Content-Type-Options: nosniff');
+    readfile($tmp);
+    @unlink($tmp);
+    exit;
 }
 
 function admin_plugin_toggle(): void {
-    require_admin();
+    require_superadmin();
     csrf_verify();
     $slug = plugin_slug_from_post();
     $active = plugins_active();
@@ -613,7 +644,7 @@ function admin_plugin_toggle(): void {
 }
 
 function admin_plugin_delete(): void {
-    require_admin();
+    require_superadmin();
     csrf_verify();
     $slug = plugin_slug_from_post();
     if (in_array($slug, plugins_active(), true)) {
@@ -626,7 +657,7 @@ function admin_plugin_delete(): void {
 }
 
 function admin_plugin_upload(): void {
-    require_admin();
+    require_superadmin();
     csrf_verify();
     if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         flash_set('error', 'A fájl feltöltése sikertelen.');
@@ -695,7 +726,11 @@ function admin_user_save(): void {
     $id = (int)($_POST['id'] ?? 0);
     $name = trim((string)($_POST['name'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
-    $role = in_array($_POST['role'] ?? '', ['admin', 'editor'], true) ? $_POST['role'] : 'editor';
+    $role = in_array($_POST['role'] ?? '', ['superadmin', 'admin', 'editor'], true) ? $_POST['role'] : 'editor';
+    if ($role === 'superadmin' && !is_superadmin_role($me['role'] ?? null)) {
+        flash_set('error', 'Szuperadmin jogosultságot csak szuperadmin adhat.');
+        redirect('admin/users');
+    }
     $pass = (string)($_POST['password'] ?? '');
 
     if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -707,7 +742,14 @@ function admin_user_save(): void {
     if ($st->fetch()) { flash_set('error', 'Ez az e-mail cím már foglalt.'); redirect('admin/users'); }
 
     if ($id) {
-        if ($id === (int)$me['id']) $role = 'admin'; // saját admin jog nem vonható el
+        $current = db()->prepare('SELECT role FROM users WHERE id=?');
+        $current->execute([$id]);
+        $currentRole = (string)$current->fetchColumn();
+        if ($currentRole === 'superadmin' && !is_superadmin_role($me['role'] ?? null)) {
+            flash_set('error', 'Szuperadmin fiókot csak szuperadmin módosíthat.');
+            redirect('admin/users');
+        }
+        if ($id === (int)$me['id']) $role = $me['role']; // saját jogosultság nem vonható el
         db()->prepare('UPDATE users SET name=?, email=?, role=? WHERE id=?')->execute([$name, $email, $role, $id]);
         if ($pass !== '') {
             if (mb_strlen($pass) < 8) { flash_set('error', 'A jelszó legalább 8 karakter legyen.'); redirect('admin/users'); }
@@ -727,6 +769,17 @@ function admin_user_delete(): void {
     csrf_verify();
     $id = (int)($_POST['id'] ?? 0);
     if ($id === (int)$me['id']) { flash_set('error', 'Saját magadat nem törölheted.'); redirect('admin/users'); }
+    $st = db()->prepare('SELECT role FROM users WHERE id=?');
+    $st->execute([$id]);
+    $role = (string)$st->fetchColumn();
+    if ($role === 'superadmin' && !is_superadmin_role($me['role'] ?? null)) {
+        flash_set('error', 'Szuperadmin fiókot csak szuperadmin törölhet.');
+        redirect('admin/users');
+    }
+    if ($role === 'superadmin' && (int)db()->query("SELECT COUNT(*) FROM users WHERE role='superadmin'")->fetchColumn() <= 1) {
+        flash_set('error', 'Az utolsó szuperadmin nem törölhető.');
+        redirect('admin/users');
+    }
     db()->prepare('DELETE FROM users WHERE id=?')->execute([$id]);
     flash_set('success', 'Felhasználó törölve.');
     redirect('admin/users');
@@ -796,10 +849,14 @@ function admin_settings(): void {
 function admin_settings_save(): void {
     require_admin();
     csrf_verify();
-    $keys = ['site_name', 'tagline', 'description', 'posts_per_page', 'footer_text', 'head_code', 'footer_code', 'post_sidebar'];
+    $keys = ['site_name', 'tagline', 'description', 'posts_per_page', 'footer_text', 'head_code', 'footer_code', 'post_sidebar', 'post_sidebar_sticky', 'post_sidebar_content'];
     $st = db()->prepare('INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
     foreach ($keys as $k) {
-        if (isset($_POST[$k])) $st->execute([$k, trim((string)$_POST[$k])]);
+        if (!isset($_POST[$k])) continue;
+        $value = trim((string)$_POST[$k]);
+        if ($k === 'post_sidebar') $value = in_array($value, ['none', 'left', 'right'], true) ? $value : 'none';
+        if ($k === 'post_sidebar_sticky') $value = $value === '1' ? '1' : '0';
+        $st->execute([$k, $value]);
     }
     flash_set('success', 'Beállítások mentve.');
     redirect('admin/settings');

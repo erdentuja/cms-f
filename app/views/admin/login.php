@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>?v=1">
+<link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>?v=5">
 </head>
 <body class="login-body">
 <div class="login-card">

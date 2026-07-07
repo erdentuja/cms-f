@@ -85,6 +85,26 @@ $previewAction = base_url('admin/posts/preview');
                     <span>Jobb</span>
                 </label>
             </div>
+
+            <?php $sbs = $post['sidebar_sticky'] ?? ''; ?>
+            <h3 class="sub-panel-title">Ragadós viselkedés</h3>
+            <div class="sidebar-picker sticky-picker">
+                <label class="sidebar-opt" title="Globális ragadós beállítás követése">
+                    <input type="radio" name="sidebar_sticky" value="" <?= $sbs === '' ? 'checked' : '' ?>>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>
+                    <span>Alapért.</span>
+                </label>
+                <label class="sidebar-opt" title="Ne legyen ragadós">
+                    <input type="radio" name="sidebar_sticky" value="0" <?= $sbs === '0' ? 'checked' : '' ?>>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M8 9h8M8 13h5"/></svg>
+                    <span>Ki</span>
+                </label>
+                <label class="sidebar-opt" title="Görgetés közben ragadjon">
+                    <input type="radio" name="sidebar_sticky" value="1" <?= $sbs === '1' ? 'checked' : '' ?>>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M8 8h8M8 12h8"/><path d="M17 3v4M17 17v4"/></svg>
+                    <span>Be</span>
+                </label>
+            </div>
         </div>
 
         <div class="panel side-panel">

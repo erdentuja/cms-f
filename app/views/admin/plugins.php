@@ -35,6 +35,7 @@
         <p class="muted">⚠ Hiányzik a plugin.php — a bővítmény nem tölthető be.</p>
         <?php endif; ?>
         <div class="btn-row">
+            <a class="btn btn-ghost btn-sm" href="<?= base_url('admin/plugins/export/' . e($slug)) ?>">Export</a>
             <form method="post" action="<?= base_url('admin/plugins/toggle') ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="slug" value="<?= e($slug) ?>">

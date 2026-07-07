@@ -77,6 +77,7 @@ $routes = [
     ['POST', '/admin/templates/import', 'admin_template_import'],
 
     ['GET',  '/admin/plugins',          'admin_plugins'],
+    ['GET',  '/admin/plugins/export/{id}', 'admin_plugin_export'],
     ['POST', '/admin/plugins/toggle',   'admin_plugin_toggle'],
     ['POST', '/admin/plugins/delete',   'admin_plugin_delete'],
     ['POST', '/admin/plugins/upload',   'admin_plugin_upload'],

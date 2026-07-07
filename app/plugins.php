@@ -117,6 +117,13 @@ function plugins_active(): array {
     return is_array($list) ? array_values(array_filter($list, 'is_string')) : [];
 }
 
+function plugin_resolve_slug(string $slug): string {
+    if (!preg_match('/^[a-z0-9_-]+$/i', $slug) || !isset(plugins_all()[$slug])) {
+        throw new RuntimeException('Ismeretlen bővítmény.');
+    }
+    return $slug;
+}
+
 /** Bekapcsolt bővítmények betöltése; a hibásak nem törik el az oldalt */
 function plugins_boot(): void {
     $GLOBALS['plugin_errors'] = [];
@@ -198,6 +205,59 @@ function zip_extract_fallback(string $zipFile, string $destDir): void {
         @mkdir(dirname("$destDir/$name"), 0775, true);
         file_put_contents("$destDir/$name", $content);
     }
+}
+
+function zip_create_from_dir(string $sourceDir, string $zipFile, string $rootName): void {
+    $sourceDir = rtrim(str_replace('\\', '/', realpath($sourceDir) ?: ''), '/');
+    if ($sourceDir === '' || !is_dir($sourceDir)) throw new RuntimeException('A bővítmény mappája nem található.');
+
+    $rootName = trim(str_replace('\\', '/', $rootName), '/');
+    if ($rootName === '' || str_contains($rootName, '..')) throw new RuntimeException('Érvénytelen export név.');
+
+    $files = [];
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($sourceDir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+    foreach ($it as $file) {
+        $path = str_replace('\\', '/', $file->getPathname());
+        $rel = ltrim(substr($path, strlen($sourceDir)), '/');
+        if ($rel === '' || str_starts_with($rel, '.git/')) continue;
+        $files[] = [$file, $rootName . '/' . $rel];
+    }
+
+    $fh = fopen($zipFile, 'wb');
+    if (!$fh) throw new RuntimeException('Az export fájl nem hozható létre.');
+
+    $central = '';
+    foreach ($files as [$file, $name]) {
+        $name = str_replace('\\', '/', $name);
+        if ($file->isDir()) {
+            if (!str_ends_with($name, '/')) $name .= '/';
+            $data = '';
+        } else {
+            $data = (string)file_get_contents($file->getPathname());
+        }
+        $crc = crc32($data);
+        if ($crc < 0) $crc += 4294967296;
+        $size = strlen($data);
+        $offset = ftell($fh);
+        $nameLen = strlen($name);
+
+        fwrite($fh, pack('VvvvvvVVVvv', 0x04034b50, 20, 0, 0, 0, 0, $crc, $size, $size, $nameLen, 0));
+        fwrite($fh, $name);
+        fwrite($fh, $data);
+
+        $central .= pack('VvvvvvvVVVvvvvvVV', 0x02014b50, 20, 20, 0, 0, 0, 0, $crc, $size, $size, $nameLen, 0, 0, 0, 0, 0, $offset)
+                  . $name;
+    }
+
+    $centralOffset = ftell($fh);
+    fwrite($fh, $central);
+    $centralSize = strlen($central);
+    $count = count($files);
+    fwrite($fh, pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, $centralSize, $centralOffset, 0));
+    fclose($fh);
 }
 
 /** Mappa rekurzív törlése (csak a plugins könyvtáron belül használjuk) */

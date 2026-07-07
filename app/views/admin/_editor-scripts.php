@@ -438,6 +438,8 @@ previewBtn.addEventListener('click', () => {
     };
     add('_csrf', window.CSRF);
     add('title', document.querySelector('[name=title]').value || 'Előnézet');
+    add('sidebar', document.querySelector('[name=sidebar]:checked')?.value || '');
+    add('sidebar_sticky', document.querySelector('[name=sidebar_sticky]:checked')?.value || '');
     add('blocks', JSON.stringify([...blockList.querySelectorAll('.block-card')].map(serializeBlock)));
     document.body.appendChild(f);
     f.submit();
