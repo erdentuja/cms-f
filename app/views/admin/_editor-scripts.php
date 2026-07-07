@@ -36,6 +36,7 @@ const blockEmpty = document.getElementById('blockEmpty');
 const quillMap = new WeakMap();
 const DRAG_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
 const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
+const CHEVRON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 
 function escAttr(s) {
     const d = document.createElement('div');
@@ -215,7 +216,40 @@ function setGalleryImages(card, arr) {
         </div>`).join('');
 }
 
-function addBlock(type, data) {
+/* Rövid tartalmi kivonat az összecsukott blokk fejlécébe */
+function blockSummary(li) {
+    const type = li.dataset.type;
+    switch (type) {
+        case 'gallery': return galleryImages(li).length + ' kép';
+        case 'faq': return li.querySelectorAll('.rep-row').length + ' kérdés';
+        case 'counters': return li.querySelectorAll('.rep-row').length + ' számláló';
+        case 'spacer': return li.querySelector('[data-k=size]')?.selectedOptions[0]?.textContent || '';
+        case 'image': {
+            const url = li.querySelector('[data-k=url]')?.value || '';
+            return li.querySelector('[data-k=caption]')?.value || url.split('/').pop() || '';
+        }
+        case 'text':
+        case 'columns': {
+            const el = li.querySelector('[data-quill]');
+            const q = el ? quillMap.get(el) : null;
+            return q ? q.getText().replace(/\s+/g, ' ').trim() : '';
+        }
+    }
+    for (const sel of ['[data-k=text]', '[data-k=label]', '[data-k=url]', '[data-k=embed]', '[data-k=code]']) {
+        const v = li.querySelector(sel)?.value?.trim();
+        if (v) return v;
+    }
+    return '';
+}
+
+function toggleCollapse(li, collapsed) {
+    li.classList.toggle('collapsed', collapsed ?? !li.classList.contains('collapsed'));
+    if (li.classList.contains('collapsed')) {
+        li.querySelector('.block-summary').textContent = blockSummary(li);
+    }
+}
+
+function addBlock(type, data, collapsed) {
     const li = document.createElement('li');
     li.className = 'block-card';
     li.dataset.type = type;
@@ -223,6 +257,8 @@ function addBlock(type, data) {
         <div class="block-card-head">
             <span class="drag-handle" draggable="true" title="Húzd a sorrendhez">${DRAG_ICON}</span>
             <strong class="block-card-label">${BLOCK_LABELS[type] || type}</strong>
+            <span class="block-summary muted"></span>
+            <button type="button" class="icon-btn" data-toggle-block title="Összecsukás / kinyitás">${CHEVRON_ICON}</button>
             <button type="button" class="icon-btn danger" data-remove-block title="Blokk törlése">${TRASH_ICON}</button>
         </div>
         <div class="block-card-body">${buildFields(type, data)}${layoutFields(type, data)}</div>`;
@@ -239,6 +275,7 @@ function addBlock(type, data) {
         quillMap.set(el, q);
     });
 
+    if (collapsed) toggleCollapse(li, true);
     toggleEmpty();
 }
 
@@ -327,6 +364,17 @@ blockList.addEventListener('click', e => {
     if (removeBtn) {
         if (confirm('Törlöd ezt a blokkot?')) removeBtn.closest('.block-card').remove();
         toggleEmpty();
+        return;
+    }
+    const toggleBtn = e.target.closest('[data-toggle-block]');
+    if (toggleBtn) {
+        toggleCollapse(toggleBtn.closest('.block-card'));
+        return;
+    }
+    // a fejléc üres részére kattintva is csukható/nyitható
+    const head = e.target.closest('.block-card-head');
+    if (head && !e.target.closest('button, .drag-handle')) {
+        toggleCollapse(head.closest('.block-card'));
     }
 });
 
@@ -356,7 +404,8 @@ blockList.addEventListener('click', e => {
     });
 })();
 
-initialBlocks.forEach(b => addBlock(b.type, b));
+// A mentett blokkok csukva indulnak — kompakt áttekintés; az újonnan hozzáadottak nyitva
+initialBlocks.forEach(b => addBlock(b.type, b, true));
 toggleEmpty();
 
 // Szerkesztő mód fül
