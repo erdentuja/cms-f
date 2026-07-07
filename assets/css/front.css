@@ -299,6 +299,36 @@ html[data-theme="dark"] .blk-row.bg-soft { background: color-mix(in srgb, var(--
 .footer-nav a { color: var(--ink-2); font-size: .9rem; font-weight: 500; transition: .16s; }
 .footer-nav a:hover { color: var(--accent); }
 
+/* ---- Modulok (shortcode-ok) ---- */
+.mod-search { display: flex; gap: 10px; margin: 18px 0; }
+.mod-search input {
+    flex: 1; font: inherit; padding: 11px 16px; border-radius: var(--radius);
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.mod-search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.mod-posts { list-style: none; padding: 0; margin: 18px 0; display: grid; gap: 2px; }
+.mod-posts li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+    padding: 10px 2px; border-bottom: 1px solid var(--line);
+}
+.mod-posts a { font-weight: 600; color: var(--ink); text-decoration: none; transition: .15s; }
+.mod-posts a:hover { color: var(--accent); }
+.mod-posts .mod-meta { color: var(--ink-3); font-size: .82rem; white-space: nowrap; }
+.mod-cats { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.mod-cat {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border-radius: 999px; text-decoration: none;
+    font-weight: 600; font-size: .88rem; color: var(--ink);
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 30%, transparent);
+    transition: .15s;
+}
+.mod-cat:hover { background: color-mix(in srgb, var(--c, var(--accent)) 22%, var(--surface)); }
+.mod-cat span {
+    background: var(--c, var(--accent)); color: #fff;
+    border-radius: 999px; padding: 1px 8px; font-size: .74rem;
+}
+
 /* ---- 404 ---- */
 .error-page { min-height: 100vh; display: grid; place-content: center; text-align: center; gap: 12px; padding: 24px; font-family: var(--font-display); }
 .error-code {

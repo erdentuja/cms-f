@@ -71,6 +71,7 @@
                         <?= empty($post['featured_image']) ? 'hidden' : '' ?>>Eltávolítás</button>
             </div>
         </div>
+        <?php require __DIR__ . '/_modules-help.php'; ?>
     </aside>
 </form>
 

@@ -62,6 +62,7 @@
                 <a class="link center-link" href="<?= base_url(e($page['slug'])) ?>" target="_blank">Megtekintés az oldalon →</a>
             <?php endif; ?>
         </div>
+        <?php require __DIR__ . '/_modules-help.php'; ?>
     </aside>
 </form>
 

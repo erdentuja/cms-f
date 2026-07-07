@@ -164,6 +164,15 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.015em; }
 .input-color { height: 46px; padding: 6px; cursor: pointer; }
 textarea.input { resize: vertical; }
 .code-input { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: .82rem; line-height: 1.5; }
+.sc-list { list-style: none; display: grid; gap: 12px; }
+.sc-list li { display: grid; gap: 4px; }
+.sc-list .muted { font-size: .78rem; line-height: 1.45; }
+.sc-copy {
+    justify-self: start; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); padding: 5px 10px; cursor: pointer; transition: .15s;
+}
+.sc-copy:hover { border-color: var(--accent); background: var(--accent-soft); }
+.sc-copy code { font-size: .78rem; color: var(--accent); }
 .mode-hint { font-size: .8rem; margin: 10px 0 0; color: var(--ink-3); text-align: center; }
 .mode-hint.warn { color: #b45309; font-weight: 600; }
 select.input { cursor: pointer; }

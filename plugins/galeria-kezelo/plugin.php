@@ -12,10 +12,9 @@ db()->exec("CREATE TABLE IF NOT EXISTS galleries (
 
 /* ---- Shortcode a tartalomban ---- */
 
-add_filter('content', function (string $html): string {
-    if (!str_contains($html, '[galeria')) return $html;
-    return preg_replace_callback('/\[galeria\s+id=(\d+)\]/', fn($m) => galeria_html((int)$m[1]), $html);
-});
+shortcode_register('galeria',
+    fn(array $a) => galeria_html((int)($a['id'] ?? 0)),
+    '[galeria id=1]', 'A Galériák menüben összeállított galéria — az id a listában látható');
 
 function galeria_images_of(string $json): array {
     $imgs = json_decode($json, true);

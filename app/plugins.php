@@ -35,6 +35,47 @@ function apply_filters(string $hook, mixed $value, ...$args): mixed {
     return $value;
 }
 
+/* ---------- Shortcode-ok (beszúrható modulok) ---------- */
+
+$GLOBALS['aurora_shortcodes'] = [];
+
+/** Modul regisztrálása: a tartalomban [tag attr=érték] formában szúrható be */
+function shortcode_register(string $tag, callable $fn, string $example = '', string $desc = ''): void {
+    $GLOBALS['aurora_shortcodes'][$tag] = [
+        'fn' => $fn,
+        'example' => $example !== '' ? $example : "[{$tag}]",
+        'desc' => $desc,
+    ];
+}
+
+/** Minden regisztrált modul (tag => meta), névsorban — a szerkesztő súgópaneljéhez */
+function shortcodes_all(): array {
+    $out = $GLOBALS['aurora_shortcodes'];
+    ksort($out);
+    return $out;
+}
+
+/** A regisztrált shortcode-ok kicserélése; az ismeretlen [valami] érintetlen marad */
+function shortcodes_apply(string $html): string {
+    if (!$GLOBALS['aurora_shortcodes'] || !str_contains($html, '[')) return $html;
+    return preg_replace_callback(
+        '/\[([a-z0-9\-]+)((?:\s+[a-z_]+=(?:"[^"]*"|[^\]\s]+))*)\s*\]/u',
+        function (array $m): string {
+            $reg = $GLOBALS['aurora_shortcodes'][$m[1]] ?? null;
+            if (!$reg) return $m[0];
+            $attrs = [];
+            preg_match_all('/([a-z_]+)=(?:"([^"]*)"|([^\]\s]+))/u', $m[2], $am, PREG_SET_ORDER);
+            foreach ($am as $a) $attrs[$a[1]] = ($a[3] ?? '') !== '' ? $a[3] : ($a[2] ?? '');
+            try {
+                return (string)$reg['fn']($attrs);
+            } catch (\Throwable) {
+                return ''; // hibás modul ne törje el az oldalt
+            }
+        },
+        $html
+    );
+}
+
 /* ---------- Bővítmények felderítése és betöltése ---------- */
 
 function plugins_dir(): string {

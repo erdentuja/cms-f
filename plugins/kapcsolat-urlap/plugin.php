@@ -13,10 +13,9 @@ db()->exec("CREATE TABLE IF NOT EXISTS contact_messages (
 
 /* ---- Shortcode a tartalomban ---- */
 
-add_filter('content', function (string $html): string {
-    if (!str_contains($html, '[kapcsolat]')) return $html;
-    return str_replace('[kapcsolat]', kapcsolat_form_html(), $html);
-});
+shortcode_register('kapcsolat',
+    fn(array $a) => kapcsolat_form_html(),
+    '[kapcsolat]', 'Kapcsolatfelvételi űrlap — az üzenetek az admin Üzenetek menüjébe érkeznek');
 
 function kapcsolat_form_html(): string {
     $sent = isset($_GET['sent']);
