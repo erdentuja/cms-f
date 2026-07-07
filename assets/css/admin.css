@@ -189,9 +189,13 @@ select.input { cursor: pointer; }
 .side-panel { padding: 20px 22px; overflow: visible; }
 .side-panel h3 { font-size: 1.02rem; margin-bottom: 14px; }
 .sortable-panel > h3 {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
     cursor: grab; user-select: none;
 }
+.panel-grip { display: grid; place-items: center; color: var(--ink-3); opacity: .55; transition: .15s; }
+.panel-grip svg { width: 15px; height: 15px; }
+.sortable-panel > h3:hover .panel-grip { opacity: 1; color: var(--accent); }
+.panel-toggle { margin-left: auto; }
 .sortable-panel.dragging { opacity: .45; }
 .sortable-panel > h3:active { cursor: grabbing; }
 .panel-toggle {

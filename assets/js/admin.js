@@ -180,6 +180,12 @@ function setFeatured(url) {
         p.classList.add('sortable-panel');
         if ((state.closed || []).includes(idOf(p))) p.classList.add('closed');
 
+        const grip = document.createElement('span');
+        grip.className = 'panel-grip';
+        grip.title = 'Húzd a panel áthelyezéséhez';
+        grip.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5.5" r="1.7"/><circle cx="15" cy="5.5" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18.5" r="1.7"/><circle cx="15" cy="18.5" r="1.7"/></svg>';
+        h.prepend(grip);
+
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'panel-toggle';
