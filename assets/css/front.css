@@ -276,6 +276,43 @@ html[data-theme="dark"] .ico-moon { display: none; }
 html[data-theme="dark"] .btn-outline { border-color: var(--ink); color: var(--ink); }
 html[data-theme="dark"] .blk-row.bg-soft { background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
 
+/* ---- Poszt-oldalsáv ---- */
+.post-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 44px; align-items: start; }
+.post-layout.sidebar-left { grid-template-columns: 300px minmax(0, 1fr); }
+.post-layout.sidebar-left .post-main { order: 2; }
+.post-main { min-width: 0; }
+.post-layout .container-narrow { padding-left: 0; padding-right: 0; }
+.post-layout .article-cover { padding-left: 0; padding-right: 0; }
+.post-sidebar { display: grid; gap: 18px; margin: 72px 0 60px; position: sticky; top: 24px; }
+.widget {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px;
+}
+.widget h3 { font-size: 1.02rem; margin-bottom: 14px; }
+.widget ul { list-style: none; display: grid; gap: 12px; }
+.widget li { display: grid; gap: 2px; }
+.widget li a { font-weight: 600; font-size: .92rem; line-height: 1.35; }
+.widget li a:hover { color: var(--accent); }
+.widget .muted-line { color: var(--ink-3); font-size: .78rem; }
+.widget-cats li a { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.widget-cats .cnt {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    color: var(--accent); border-radius: 999px; padding: 1px 9px; font-size: .76rem;
+}
+.widget-search form { display: flex; gap: 8px; }
+.widget-search input {
+    flex: 1; min-width: 0; font: inherit; padding: 9px 13px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
+.widget-search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.widget-search .btn { padding: 9px 13px; margin: 0; }
+.widget-search .btn svg { width: 16px; height: 16px; }
+@media (max-width: 900px) {
+    .post-layout, .post-layout.sidebar-left { grid-template-columns: 1fr; gap: 0; }
+    .post-layout.sidebar-left .post-main { order: 0; }
+    .post-sidebar { position: static; margin: 0 0 50px; }
+}
+
 /* ---- Related ---- */
 .related { padding: 20px 24px 70px; }
 .related h2 { font-size: 1.45rem; margin-bottom: 22px; }

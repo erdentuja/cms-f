@@ -64,10 +64,30 @@ function front_post(string $slug): void {
     $st->execute([$post['id'], $post['category_id'], $post['category_id']]);
     $blocks = $post['builder'] ? (json_decode($post['blocks'], true) ?: []) : [];
 
+    // Oldalsáv (beállítás: post_sidebar = left|right|none)
+    $sidebar = setting('post_sidebar', 'none');
+    if (!in_array($sidebar, ['left', 'right'], true)) $sidebar = 'none';
+    $sideData = null;
+    if ($sidebar !== 'none') {
+        $recent = db()->prepare("SELECT title, slug, published_at FROM posts
+                                 WHERE status='published' AND id != ? ORDER BY published_at DESC LIMIT 5");
+        $recent->execute([$post['id']]);
+        $popular = db()->prepare("SELECT title, slug, views FROM posts
+                                  WHERE status='published' AND id != ? ORDER BY views DESC LIMIT 5");
+        $popular->execute([$post['id']]);
+        $sideData = [
+            'categories' => front_categories(),
+            'recent' => $recent->fetchAll(),
+            'popular' => $popular->fetchAll(),
+        ];
+    }
+
     front_render('post', [
         'title' => $post['title'],
         'post' => $post,
         'blocks' => $blocks,
+        'sidebar' => $sidebar,
+        'sideData' => $sideData,
         'related' => $st->fetchAll(),
         'metaDescription' => $post['excerpt'] ?: excerpt_of($post['builder'] ? blocks_render($blocks) : $post['content']),
         'ogType' => 'article',

@@ -25,6 +25,15 @@
             <input class="input" type="number" name="posts_per_page" min="1" max="50" value="<?= e(setting('posts_per_page', '9')) ?>">
         </label>
         <label class="field">
+            <span>Poszt-oldalsáv <em class="muted">(keresés, kategóriák, friss és népszerű posztok a poszt oldalakon)</em></span>
+            <select class="input" name="post_sidebar">
+                <?php $ps = setting('post_sidebar', 'none'); ?>
+                <option value="none" <?= $ps === 'none' ? 'selected' : '' ?>>Nincs</option>
+                <option value="right" <?= $ps === 'right' ? 'selected' : '' ?>>Jobb oldalt</option>
+                <option value="left" <?= $ps === 'left' ? 'selected' : '' ?>>Bal oldalt</option>
+            </select>
+        </label>
+        <label class="field">
             <span>Lábléc szöveg</span>
             <input class="input" type="text" name="footer_text" value="<?= e(setting('footer_text')) ?>">
         </label>

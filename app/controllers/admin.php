@@ -795,7 +795,7 @@ function admin_settings(): void {
 function admin_settings_save(): void {
     require_admin();
     csrf_verify();
-    $keys = ['site_name', 'tagline', 'description', 'posts_per_page', 'footer_text', 'head_code', 'footer_code'];
+    $keys = ['site_name', 'tagline', 'description', 'posts_per_page', 'footer_text', 'head_code', 'footer_code', 'post_sidebar'];
     $st = db()->prepare('INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
     foreach ($keys as $k) {
         if (isset($_POST[$k])) $st->execute([$k, trim((string)$_POST[$k])]);
