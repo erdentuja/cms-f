@@ -704,6 +704,60 @@ function admin_user_delete(): void {
     redirect('admin/users');
 }
 
+/* ---------- Redirects ---------- */
+
+function admin_redirects(): void {
+    require_admin();
+    $redirects = db()->query('SELECT * FROM redirects ORDER BY created_at DESC, id DESC')->fetchAll();
+    admin_render('redirects', ['title' => 'Átirányítások', 'redirects' => $redirects]);
+}
+
+function admin_redirect_save(): void {
+    require_admin();
+    csrf_verify();
+    $id = (int)($_POST['id'] ?? 0);
+    $from = redirect_normalize_path((string)($_POST['from_path'] ?? ''));
+    $to = trim((string)($_POST['to_url'] ?? ''));
+    $code = (int)($_POST['code'] ?? 301) === 302 ? 302 : 301;
+
+    if ($from === '/' || $to === '') {
+        flash_set('error', 'A forrás útvonal és a cél megadása kötelező (a főoldal nem irányítható át).');
+        redirect('admin/redirects');
+    }
+    if (str_starts_with($from, '/admin')) {
+        flash_set('error', 'Admin útvonal nem irányítható át.');
+        redirect('admin/redirects');
+    }
+    if (!preg_match('#^https?://#i', $to)) $to = '/' . ltrim($to, '/');
+    if (!preg_match('#^https?://#i', $to) && redirect_normalize_path($to) === $from) {
+        flash_set('error', 'A cél nem mutathat önmagára.');
+        redirect('admin/redirects');
+    }
+
+    $st = db()->prepare('SELECT id FROM redirects WHERE from_path = ? AND id != ?');
+    $st->execute([$from, $id]);
+    if ($st->fetch()) {
+        flash_set('error', 'Erre az útvonalra már létezik átirányítás.');
+        redirect('admin/redirects');
+    }
+
+    if ($id) {
+        db()->prepare('UPDATE redirects SET from_path=?, to_url=?, code=? WHERE id=?')->execute([$from, $to, $code, $id]);
+    } else {
+        db()->prepare('INSERT INTO redirects (from_path, to_url, code) VALUES (?,?,?)')->execute([$from, $to, $code]);
+    }
+    flash_set('success', 'Átirányítás mentve.');
+    redirect('admin/redirects');
+}
+
+function admin_redirect_delete(): void {
+    require_admin();
+    csrf_verify();
+    db()->prepare('DELETE FROM redirects WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
+    flash_set('success', 'Átirányítás törölve.');
+    redirect('admin/redirects');
+}
+
 /* ---------- Settings ---------- */
 
 function admin_settings(): void {
@@ -714,7 +768,7 @@ function admin_settings(): void {
 function admin_settings_save(): void {
     require_admin();
     csrf_verify();
-    $keys = ['site_name', 'tagline', 'description', 'posts_per_page', 'footer_text'];
+    $keys = ['site_name', 'tagline', 'description', 'posts_per_page', 'footer_text', 'head_code', 'footer_code'];
     $st = db()->prepare('INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
     foreach ($keys as $k) {
         if (isset($_POST[$k])) $st->execute([$k, trim((string)$_POST[$k])]);

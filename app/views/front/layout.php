@@ -48,6 +48,7 @@ html[data-theme="dark"] {
 })();
 </script>
 <?php do_action('front_head'); ?>
+<?= setting('head_code') ?>
 </head>
 <body>
 <header class="site-header">
@@ -97,5 +98,6 @@ html[data-theme="dark"] {
     </div>
 </footer>
 <?php do_action('front_footer'); ?>
+<?= setting('footer_code') ?>
 </body>
 </html>

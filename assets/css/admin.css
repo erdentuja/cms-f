@@ -149,6 +149,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.015em; }
 .input-title { font-size: 1.3rem; font-weight: 600; font-family: var(--font-display); padding: 14px 18px; margin-bottom: 18px; }
 .input-color { height: 46px; padding: 6px; cursor: pointer; }
 textarea.input { resize: vertical; }
+.code-input { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: .82rem; line-height: 1.5; }
 select.input { cursor: pointer; }
 .check-field { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-weight: 500; cursor: pointer; }
 .check-field input { width: 17px; height: 17px; accent-color: var(--accent); }

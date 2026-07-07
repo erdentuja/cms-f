@@ -28,6 +28,15 @@
             <span>Lábléc szöveg</span>
             <input class="input" type="text" name="footer_text" value="<?= e(setting('footer_text')) ?>">
         </label>
+        <label class="field">
+            <span>Fejléc kód <em class="muted">(a &lt;/head&gt; elé kerül — pl. analitika, meta tagek)</em></span>
+            <textarea class="input code-input" name="head_code" rows="4" spellcheck="false" placeholder="<script>…</script>"><?= e(setting('head_code')) ?></textarea>
+        </label>
+        <label class="field">
+            <span>Lábléc kód <em class="muted">(a &lt;/body&gt; elé kerül — pl. chat widget)</em></span>
+            <textarea class="input code-input" name="footer_code" rows="4" spellcheck="false"><?= e(setting('footer_code')) ?></textarea>
+        </label>
+        <p class="muted" style="font-size:.82rem">A kódbeszúrás nyers HTML-ként kerül a nyilvános oldalakra — csak megbízható kódot illessz be.</p>
         <button class="btn btn-primary" type="submit">Mentés</button>
     </form>
 </div>

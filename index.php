@@ -18,6 +18,11 @@ if ($base !== '' && str_starts_with($uri, $base)) $uri = substr($uri, strlen($ba
 $uri = '/' . trim(rawurldecode($uri), '/');
 $method = $_SERVER['REQUEST_METHOD'];
 
+// 301/302 átirányítások — csak frontend GET kérésekre, az admin útvonalakat nem érinti
+if ($method === 'GET' && !str_starts_with($uri, '/admin')) {
+    redirects_apply($uri);
+}
+
 /** Route table: [method, pattern, handler]. {x} captures a segment. */
 $routes = [
     // Frontend
@@ -74,6 +79,10 @@ $routes = [
     ['POST', '/admin/plugins/toggle',   'admin_plugin_toggle'],
     ['POST', '/admin/plugins/delete',   'admin_plugin_delete'],
     ['POST', '/admin/plugins/upload',   'admin_plugin_upload'],
+
+    ['GET',  '/admin/redirects',        'admin_redirects'],
+    ['POST', '/admin/redirects/save',   'admin_redirect_save'],
+    ['POST', '/admin/redirects/delete', 'admin_redirect_delete'],
 
     ['GET',  '/admin/users',            'admin_users'],
     ['POST', '/admin/users/save',       'admin_user_save'],

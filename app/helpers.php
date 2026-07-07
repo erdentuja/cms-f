@@ -125,6 +125,40 @@ function reading_time(string $html): int {
     return max(1, (int)ceil($words / 200));
 }
 
+/* ---------- Átirányítások ---------- */
+
+/** Útvonal normalizálása átirányításhoz: mindig / prefixszel, záró / nélkül */
+function redirect_normalize_path(string $p): string {
+    $p = trim($p);
+    if (preg_match('#^https?://#i', $p)) $p = parse_url($p, PHP_URL_PATH) ?: '/';
+    $p = strtok($p, '?#') ?: '/';
+    return '/' . trim($p, '/');
+}
+
+/** Ha van átirányítás a kért útvonalra, végrehajtja (301/302) és kilép */
+function redirects_apply(string $uri): void {
+    $st = db()->prepare('SELECT * FROM redirects WHERE from_path = ?');
+    $st->execute([$uri]);
+    $r = $st->fetch();
+    if (!$r) return;
+
+    $target = trim($r['to_url']);
+    // Hurokvédelem: ha a cél ugyanaz az útvonal, nem irányítunk át
+    if (redirect_normalize_path($target) === $r['from_path'] && !preg_match('#^https?://#i', $target)) return;
+
+    db()->prepare("UPDATE redirects SET hits = hits + 1, last_hit = datetime('now','localtime') WHERE id = ?")
+        ->execute([$r['id']]);
+
+    $location = preg_match('#^https?://#i', $target) ? $target : base_url($target);
+    // Az eredeti query stringet továbbvisszük, ha a célban nincs sajátja
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    if ($qs !== '' && !str_contains($location, '?')) $location .= '?' . $qs;
+
+    http_response_code((int)$r['code'] === 302 ? 302 : 301);
+    header('Location: ' . $location);
+    exit;
+}
+
 /* ---------- Dizájnsablonok ---------- */
 
 function template_fonts(): array {

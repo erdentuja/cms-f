@@ -43,6 +43,16 @@ function db_migrate(PDO $db): void {
         $db->exec("INSERT INTO settings (key, value) VALUES ('menu_seeded','1')");
     }
 
+    $db->exec("CREATE TABLE IF NOT EXISTS redirects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_path TEXT NOT NULL UNIQUE,
+        to_url TEXT NOT NULL,
+        code INTEGER NOT NULL DEFAULT 301,
+        hits INTEGER NOT NULL DEFAULT 0,
+        last_hit TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    )");
+
     $db->exec("CREATE TABLE IF NOT EXISTS templates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
