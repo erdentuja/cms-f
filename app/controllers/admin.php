@@ -176,7 +176,8 @@ function admin_page_save(): void {
         $st->execute($data);
         $id = (int)db()->lastInsertId();
     }
-    flash_set('success', 'Az oldal mentve.');
+    flash_set('success', $builder ? 'Az oldal mentve — a látogatók az oldalépítő tartalmát látják.'
+                                  : 'Az oldal mentve — a látogatók a klasszikus szerkesztő tartalmát látják.');
     redirect("admin/pages/$id");
 }
 

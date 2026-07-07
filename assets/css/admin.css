@@ -150,6 +150,8 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.015em; }
 .input-color { height: 46px; padding: 6px; cursor: pointer; }
 textarea.input { resize: vertical; }
 .code-input { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: .82rem; line-height: 1.5; }
+.mode-hint { font-size: .8rem; margin: 10px 0 0; color: var(--ink-3); text-align: center; }
+.mode-hint.warn { color: #b45309; font-weight: 600; }
 select.input { cursor: pointer; }
 .check-field { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-weight: 500; cursor: pointer; }
 .check-field input { width: 17px; height: 17px; accent-color: var(--accent); }

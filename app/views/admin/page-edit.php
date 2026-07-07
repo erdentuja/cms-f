@@ -56,6 +56,7 @@
             </label>
             <button class="btn btn-primary btn-block" type="submit">Mentés</button>
             <button class="btn btn-ghost btn-block" type="button" id="previewBtn" hidden>Előnézet új lapon</button>
+            <p class="mode-hint" id="modeHint"></p>
             <p class="muted side-hint">A menübe a <a class="link" href="<?= base_url('admin/menu') ?>">Menük</a> oldalon tudod felvenni.</p>
             <?php if (($page['status'] ?? '') === 'published' && !empty($page['slug'])): ?>
                 <a class="link center-link" href="<?= base_url(e($page['slug'])) ?>" target="_blank">Megtekintés az oldalon →</a>
@@ -252,6 +253,20 @@ function buildFields(type, data) {
 
 function toggleEmpty() {
     blockEmpty.hidden = blockList.children.length > 0;
+    updateModeHint();
+}
+
+/* A látogatók a mentett mód tartalmát látják — mindig jelezzük, melyik az */
+function updateModeHint() {
+    const hint = document.getElementById('modeHint');
+    const builder = document.getElementById('builderMode').value === '1';
+    const hasBlocks = document.getElementById('blockList').children.length > 0;
+    const trap = !builder && hasBlocks;
+    hint.textContent = builder
+        ? 'Mentéskor az oldalépítő tartalma kerül az oldalra.'
+        : 'Mentéskor a klasszikus szerkesztő tartalma kerül az oldalra.'
+          + (trap ? ' Az oldalépítő blokkjai rejtve maradnak!' : '');
+    hint.classList.toggle('warn', trap);
 }
 
 function galleryImages(card) {
@@ -422,6 +437,7 @@ function setTab(tab) {
     builderPane.hidden = tab !== 'builder';
     builderModeInput.value = tab === 'builder' ? '1' : '0';
     previewBtn.hidden = tab !== 'builder';
+    updateModeHint();
 }
 tabBtns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 setTab(<?= json_encode($builderMode ? 'builder' : 'classic') ?>);
