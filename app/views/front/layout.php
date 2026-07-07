@@ -3,19 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e($title ?? '') ?> — <?= e(setting('site_name')) ?></title>
-<meta name="description" content="<?= e($metaDescription ?? setting('description')) ?>">
-<?php $ogUrl = site_url(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/'); ?>
+<?php
+$siteName = setting('site_name');
+$seoTitle = trim((string)($seoTitle ?? ''));
+$pageTitle = $seoTitle !== '' ? $seoTitle : trim((string)($title ?? $siteName));
+$htmlTitle = $pageTitle === $siteName ? $siteName : $pageTitle . ' — ' . $siteName;
+$metaDescription = seo_text((string)($metaDescription ?? setting('description')), 160);
+$ogUrl = trim((string)($canonical ?? '')) ?: site_url(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/');
+$ogUrl = absolute_url($ogUrl);
+$robots = seo_robots_value((string)($robots ?? setting('seo_robots', 'index,follow')));
+$ogImageUrl = !empty($ogImage) ? absolute_url((string)$ogImage) : '';
+$twitterSite = trim((string)setting('twitter_site'));
+?>
+<title><?= e($htmlTitle) ?></title>
+<meta name="description" content="<?= e($metaDescription) ?>">
+<meta name="robots" content="<?= e($robots) ?>">
 <link rel="canonical" href="<?= e($ogUrl) ?>">
 <meta property="og:site_name" content="<?= e(setting('site_name')) ?>">
-<meta property="og:title" content="<?= e($title ?? setting('site_name')) ?>">
-<meta property="og:description" content="<?= e($metaDescription ?? setting('description')) ?>">
+<meta property="og:title" content="<?= e($pageTitle) ?>">
+<meta property="og:description" content="<?= e($metaDescription) ?>">
 <meta property="og:type" content="<?= e($ogType ?? 'website') ?>">
 <meta property="og:url" content="<?= e($ogUrl) ?>">
-<?php if (!empty($ogImage)): ?>
-<meta property="og:image" content="<?= e(site_url($ogImage)) ?>">
+<meta property="og:locale" content="hu_HU">
+<?php if ($ogImageUrl !== ''): ?>
+<meta property="og:image" content="<?= e($ogImageUrl) ?>">
+<meta property="og:image:secure_url" content="<?= e($ogImageUrl) ?>">
 <meta name="twitter:card" content="summary_large_image">
+<?php else: ?>
+<meta name="twitter:card" content="summary">
 <?php endif; ?>
+<meta name="twitter:title" content="<?= e($pageTitle) ?>">
+<meta name="twitter:description" content="<?= e($metaDescription) ?>">
+<?php if ($ogImageUrl !== ''): ?><meta name="twitter:image" content="<?= e($ogImageUrl) ?>"><?php endif; ?>
+<?php if ($twitterSite !== ''): ?><meta name="twitter:site" content="<?= e($twitterSite) ?>"><?php endif; ?>
 <link rel="alternate" type="application/rss+xml" title="<?= e(setting('site_name')) ?> RSS" href="<?= base_url('rss.xml') ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

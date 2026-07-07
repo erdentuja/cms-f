@@ -40,6 +40,11 @@ function front_home(): void {
 
     front_render('home', [
         'title' => setting('site_name'),
+        'seoTitle' => setting('seo_home_title', setting('site_name')),
+        'metaDescription' => setting('description'),
+        'ogImage' => setting('default_og_image'),
+        'canonical' => site_url('/'),
+        'robots' => setting('seo_robots', 'index,follow'),
         'hero' => $hero,
         'posts' => $posts,
         'categories' => front_categories(),
@@ -63,6 +68,8 @@ function front_post(string $slug): void {
                          ORDER BY p.published_at DESC LIMIT 3");
     $st->execute([$post['id'], $post['category_id'], $post['category_id']]);
     $blocks = $post['builder'] ? (json_decode($post['blocks'], true) ?: []) : [];
+    // Egyszer renderelünk: az excerpt, az olvasási idő és a nézet is ezt kapja
+    $blocksHtml = $blocks ? blocks_render($blocks) : '';
 
     // Oldalsáv: a poszt saját beállítása felülírja a globálisat (post_sidebar)
     $sidebar = trim((string)($post['sidebar'] ?? ''));
@@ -73,17 +80,20 @@ function front_post(string $slug): void {
     $sidebarSticky = $sidebarSticky === '1';
     $sidebarContent = $sidebar !== 'none' ? setting('post_sidebar_content', sidebar_content_default()) : '';
 
+    $seo = seo_meta_from_row($post, (string)$post['title'],
+        $post['excerpt'] ?: excerpt_of($post['builder'] ? $blocksHtml : $post['content']),
+        $post['featured_image'] ?: setting('default_og_image'),
+        site_url('post/' . $post['slug']));
     front_render('post', [
         'title' => $post['title'],
         'post' => $post,
-        'blocks' => $blocks,
+        'blocksHtml' => $blocksHtml,
         'sidebar' => $sidebar,
         'sidebarSticky' => $sidebarSticky,
         'sidebarContent' => $sidebarContent,
         'related' => $st->fetchAll(),
-        'metaDescription' => $post['excerpt'] ?: excerpt_of($post['builder'] ? blocks_render($blocks) : $post['content']),
+        ...$seo,
         'ogType' => 'article',
-        'ogImage' => $post['featured_image'] ?: null,
     ]);
 }
 
@@ -93,7 +103,17 @@ function front_page(string $slug): void {
     $page = $st->fetch();
     if (!$page) { http_response_code(404); echo view('front/404'); return; }
     $blocks = $page['builder'] ? (json_decode($page['blocks'], true) ?: []) : [];
-    front_render('page', ['title' => $page['title'], 'page' => $page, 'blocks' => $blocks]);
+    $blocksHtml = $blocks ? blocks_render($blocks) : '';
+    $seo = seo_meta_from_row($page, (string)$page['title'],
+        excerpt_of($page['builder'] ? $blocksHtml : $page['content']),
+        setting('default_og_image'), site_url($page['slug']));
+    front_render('page', [
+        'title' => $page['title'],
+        'page' => $page,
+        'blocksHtml' => $blocksHtml,
+        ...$seo,
+        'ogType' => 'website',
+    ]);
 }
 
 function front_category(string $slug): void {
@@ -107,7 +127,15 @@ function front_category(string $slug): void {
                          WHERE p.status='published' AND p.category_id=? ORDER BY p.published_at DESC");
     $st->execute([$cat['id']]);
 
-    front_render('category', ['title' => $cat['name'], 'cat' => $cat, 'posts' => $st->fetchAll()]);
+    $seo = seo_meta_from_row($cat, (string)$cat['name'], (string)($cat['description'] ?? ''),
+        setting('default_og_image'), site_url('category/' . $cat['slug']));
+    front_render('category', [
+        'title' => $cat['name'],
+        'cat' => $cat,
+        'posts' => $st->fetchAll(),
+        ...$seo,
+        'ogType' => 'website',
+    ]);
 }
 
 function front_sitemap(): void {
@@ -165,5 +193,13 @@ function front_search(): void {
         $st->execute([$like, $like, $like]);
         $posts = $st->fetchAll();
     }
-    front_render('search', ['title' => 'Keresés', 'q' => $q, 'posts' => $posts]);
+    front_render('search', [
+        'title' => 'Keresés',
+        'q' => $q,
+        'posts' => $posts,
+        'seoTitle' => 'Keresés',
+        'metaDescription' => 'Keresési eredmények: ' . $q,
+        'canonical' => site_url('search'),
+        'robots' => 'noindex,follow',
+    ]);
 }

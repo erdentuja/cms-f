@@ -18,7 +18,7 @@
                     <td class="muted"><?= (int)$c['cnt'] ?></td>
                     <td class="row-actions">
                         <button class="icon-btn" type="button" title="Szerkesztés"
-                                onclick='editCategory(<?= json_encode(['id'=>$c['id'],'name'=>$c['name'],'description'=>$c['description'],'color'=>$c['color']], JSON_HEX_APOS) ?>)'>
+                                onclick='editCategory(<?= json_encode(['id'=>$c['id'],'name'=>$c['name'],'description'=>$c['description'],'color'=>$c['color'],'seo_title'=>$c['seo_title'] ?? '','seo_description'=>$c['seo_description'] ?? '','seo_image'=>$c['seo_image'] ?? '','seo_canonical'=>$c['seo_canonical'] ?? '','seo_robots'=>$c['seo_robots'] ?? 'index,follow'], JSON_HEX_APOS|JSON_UNESCAPED_UNICODE) ?>)'>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
                         </button>
                         <form method="post" action="<?= base_url('admin/categories/delete') ?>" data-confirm="Törlöd a kategóriát? A posztok kategória nélkül maradnak.">
@@ -53,6 +53,30 @@
                 <span>Szín</span>
                 <input class="input input-color" type="color" name="color" id="catColor" value="#6366f1">
             </label>
+            <label class="field">
+                <span>SEO cím</span>
+                <input class="input" type="text" name="seo_title" id="catSeoTitle" maxlength="70">
+            </label>
+            <label class="field">
+                <span>Meta leírás</span>
+                <textarea class="input" name="seo_description" id="catSeoDesc" rows="2" maxlength="160"></textarea>
+            </label>
+            <label class="field">
+                <span>OG kép</span>
+                <input class="input" type="text" name="seo_image" id="catSeoImage" placeholder="uploads/... vagy https://...">
+            </label>
+            <label class="field">
+                <span>Canonical URL</span>
+                <input class="input" type="url" name="seo_canonical" id="catSeoCanonical">
+            </label>
+            <label class="field">
+                <span>Robots</span>
+                <select class="input" name="seo_robots" id="catSeoRobots">
+                    <?php foreach (['index,follow', 'noindex,follow', 'index,nofollow', 'noindex,nofollow'] as $opt): ?>
+                    <option value="<?= e($opt) ?>"><?= e($opt) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <div class="btn-row">
                 <button class="btn btn-primary" type="submit">Mentés</button>
                 <button class="btn btn-ghost" type="button" onclick="resetCategoryForm()" id="catCancel" hidden>Mégse</button>
@@ -68,6 +92,11 @@ function editCategory(c) {
     document.getElementById('catName').value = c.name;
     document.getElementById('catDesc').value = c.description || '';
     document.getElementById('catColor').value = c.color || '#6366f1';
+    document.getElementById('catSeoTitle').value = c.seo_title || '';
+    document.getElementById('catSeoDesc').value = c.seo_description || '';
+    document.getElementById('catSeoImage').value = c.seo_image || '';
+    document.getElementById('catSeoCanonical').value = c.seo_canonical || '';
+    document.getElementById('catSeoRobots').value = c.seo_robots || 'index,follow';
     document.getElementById('catCancel').hidden = false;
     document.getElementById('catName').focus();
 }

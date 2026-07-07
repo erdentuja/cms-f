@@ -21,9 +21,13 @@ $previewAction = base_url('admin/pages/preview');
                value="<?= e($page['title'] ?? '') ?>">
 
         <?php require __DIR__ . '/_editor-content.php'; ?>
+
+        <div class="edit-lower panel-zone" data-panel-zone="bottom" aria-label="Szerkesztő alatti panelek">
+            <div class="panel-zone-empty">Ide húzhatod a jobb oldali paneleket</div>
+        </div>
     </div>
 
-    <aside class="edit-side">
+    <aside class="edit-side panel-zone" data-panel-zone="side">
         <div class="panel side-panel">
             <h3>Publikálás</h3>
             <label class="field">
@@ -45,6 +49,9 @@ $previewAction = base_url('admin/pages/preview');
                 <a class="link center-link" href="<?= base_url(e($page['slug'])) ?>" target="_blank">Megtekintés az oldalon →</a>
             <?php endif; ?>
         </div>
+
+        <?php $seoRow = $page ?? []; $seoTitleHint = 'üresen az oldal címe'; $seoDescHint = ''; $seoImageHint = '';
+        require __DIR__ . '/_seo-panel.php'; ?>
         <?php require __DIR__ . '/_modules-help.php'; ?>
     </aside>
 </form>
@@ -53,3 +60,4 @@ $previewAction = base_url('admin/pages/preview');
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <?php require __DIR__ . '/_editor-scripts.php'; ?>
+<?php require __DIR__ . '/_panel-layout-scripts.php'; ?>

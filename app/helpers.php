@@ -6,6 +6,95 @@ function e(?string $s): string {
     return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
 }
 
+function sanitize_html(string $html): string {
+    if ($html === '') return '';
+    if (!class_exists('DOMDocument')) {
+        return nl2br(e(strip_tags($html)));
+    }
+
+    // Kérésen belüli memoizálás: ugyanaz a tartalom (pl. oldalsáv) csak egyszer parsolódik
+    static $memo = [];
+    $memoKey = md5($html);
+    if (isset($memo[$memoKey])) return $memo[$memoKey];
+
+    $allowed = [
+        'p'=>[], 'br'=>[], 'strong'=>[], 'b'=>[], 'em'=>[], 'i'=>[], 'u'=>[], 's'=>[],
+        'ul'=>[], 'ol'=>[], 'li'=>[], 'blockquote'=>[], 'h1'=>[], 'h2'=>[], 'h3'=>[], 'h4'=>[],
+        'a'=>['href','title','target','rel'], 'img'=>['src','alt','title','loading','width','height'],
+        'figure'=>[], 'figcaption'=>[], 'div'=>['class'], 'span'=>['class'],
+        'table'=>[], 'thead'=>[], 'tbody'=>[], 'tr'=>[], 'th'=>['colspan','rowspan'], 'td'=>['colspan','rowspan'],
+        'hr'=>[], 'iframe'=>['src','title','loading','allowfullscreen','allow','referrerpolicy'],
+    ];
+    $uriAttrs = ['href', 'src'];
+    $safeUri = function (string $value, string $tag): bool {
+        $value = trim(html_entity_decode($value, ENT_QUOTES, 'UTF-8'));
+        if ($value === '') return false;
+        if ($tag === 'iframe') {
+            return (bool)preg_match('#^https://(www\.youtube-nocookie\.com/embed/|www\.youtube\.com/embed/|player\.vimeo\.com/video/|www\.google\.com/maps/embed|maps\.google\.com/maps|www\.openstreetmap\.org/export/embed\.html)#i', $value);
+        }
+        if (preg_match('#^https?://#i', $value)) return true;
+        if (str_starts_with($value, '//')) return true;
+        if (str_starts_with($value, '/')) return true;
+        return !str_contains($value, ':') && (bool)preg_match('#^[a-z0-9._~!$&\'()*+,;=@%/-]+$#i', $value);
+    };
+
+    $dom = new DOMDocument('1.0', 'UTF-8');
+    libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="utf-8"?><div id="__root">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    $root = $dom->getElementById('__root');
+    if (!$root) return '';
+
+    $walk = function (DOMNode $node) use (&$walk, $dom, $allowed, $uriAttrs, $safeUri): void {
+        for ($child = $node->firstChild; $child; ) {
+            $next = $child->nextSibling;
+            if ($child instanceof DOMElement) {
+                $tag = strtolower($child->tagName);
+                if (in_array($tag, ['script', 'style', 'object', 'embed'], true)) {
+                    $node->removeChild($child);
+                    $child = $next;
+                    continue;
+                }
+                if (!array_key_exists($tag, $allowed)) {
+                    while ($child->firstChild) $node->insertBefore($child->firstChild, $child);
+                    $node->removeChild($child);
+                    $child = $next;
+                    continue;
+                }
+                foreach (iterator_to_array($child->attributes) as $attr) {
+                    $name = strtolower($attr->name);
+                    $value = $attr->value;
+                    if (str_starts_with($name, 'on') || $name === 'style' || !in_array($name, $allowed[$tag], true)) {
+                        $child->removeAttribute($attr->name);
+                        continue;
+                    }
+                    if (in_array($name, $uriAttrs, true) && !$safeUri($value, $tag)) {
+                        $child->removeAttribute($attr->name);
+                    }
+                }
+                if ($tag === 'a' && $child->getAttribute('target') === '_blank') {
+                    $child->setAttribute('rel', 'noopener noreferrer');
+                }
+                if ($tag === 'iframe' && $child->getAttribute('src') === '') {
+                    $node->removeChild($child);
+                    $child = $next;
+                    continue;
+                }
+                $walk($child);
+            } elseif ($child->nodeType === XML_COMMENT_NODE) {
+                $node->removeChild($child);
+            }
+            $child = $next;
+        }
+    };
+    $walk($root);
+
+    $out = '';
+    foreach ($root->childNodes as $child) $out .= $dom->saveHTML($child);
+    if (count($memo) < 64) $memo[$memoKey] = $out;
+    return $out;
+}
+
 /** Base URL of the app (works in subfolder and vhost too) */
 function base_url(string $path = ''): string {
     static $base = null;
@@ -21,6 +110,48 @@ function site_url(string $path = ''): string {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     return $scheme . '://' . $host . base_url($path);
+}
+
+function absolute_url(string $url): string {
+    $url = trim($url);
+    if ($url === '') return '';
+    if (preg_match('#^https?://#i', $url)) return $url;
+    return site_url(ltrim($url, '/'));
+}
+
+function seo_text(string $value, int $max): string {
+    $value = trim(preg_replace('/\s+/u', ' ', strip_tags($value)) ?? '');
+    return mb_substr($value, 0, $max);
+}
+
+function seo_robots_value(string $value): string {
+    $allowed = ['index,follow', 'noindex,follow', 'index,nofollow', 'noindex,nofollow'];
+    return in_array($value, $allowed, true) ? $value : 'index,follow';
+}
+
+function seo_meta_from_row(array $row, string $fallbackTitle, string $fallbackDescription = '', string $fallbackImage = '', string $defaultCanonical = ''): array {
+    $title = seo_text((string)($row['seo_title'] ?? ''), 70);
+    $description = seo_text((string)($row['seo_description'] ?? ''), 160);
+    $image = trim((string)($row['seo_image'] ?? ''));
+    $canonical = trim((string)($row['seo_canonical'] ?? ''));
+    return [
+        'seoTitle' => $title !== '' ? $title : seo_text($fallbackTitle, 70),
+        'metaDescription' => $description !== '' ? $description : seo_text($fallbackDescription ?: setting('description'), 160),
+        'ogImage' => $image !== '' ? $image : $fallbackImage,
+        'canonical' => $canonical !== '' ? absolute_url($canonical) : $defaultCanonical,
+        'robots' => seo_robots_value((string)($row['seo_robots'] ?? 'index,follow')),
+    ];
+}
+
+/** SEO mezők beolvasása a mentési POST-ból — poszt/oldal/kategória közös része */
+function seo_fields_from_post(): array {
+    return [
+        seo_text((string)($_POST['seo_title'] ?? ''), 70),
+        seo_text((string)($_POST['seo_description'] ?? ''), 160),
+        trim((string)($_POST['seo_image'] ?? '')),
+        trim((string)($_POST['seo_canonical'] ?? '')),
+        seo_robots_value((string)($_POST['seo_robots'] ?? 'index,follow')),
+    ];
 }
 
 function redirect(string $path): never {
@@ -198,7 +329,7 @@ function redirects_apply(string $uri): void {
     exit;
 }
 
-/* ---------- Dizájnsablonok ---------- */
+/* ---------- Stílusok ---------- */
 
 function template_fonts(): array {
     return ['Sora', 'Inter', 'Space Grotesk', 'Manrope', 'Poppins', 'DM Sans', 'Playfair Display', 'Lora'];
@@ -213,7 +344,7 @@ function template_defaults(): array {
     ];
 }
 
-/** Sablonadatok szigorú validálása (importnál és kirajzolásnál is fut) */
+/** Stílusadatok szigorú validálása (importnál és kirajzolásnál is fut) */
 function template_sanitize(array $in): array {
     $def = template_defaults();
     $out = [];
@@ -229,7 +360,7 @@ function template_sanitize(array $in): array {
     return $out;
 }
 
-/** Az aktív sablon adatai (kérésenként gyorsítótárazva) */
+/** Az aktív stílus adatai (kérésenként gyorsítótárazva) */
 function active_template(): array {
     static $tpl = null;
     if ($tpl === null) {
@@ -244,7 +375,7 @@ function active_template(): array {
     return $tpl;
 }
 
-/** Google Fonts link href az aktív sablon betűtípusaihoz */
+/** Google Fonts link href az aktív stílus betűtípusaihoz */
 function template_fonts_href(array $tpl): string {
     $fams = array_unique([$tpl['font_display'], $tpl['font_body']]);
     $parts = array_map(fn($f) => 'family=' . str_replace(' ', '+', $f) . ':wght@400;500;600;700;800', $fams);
@@ -412,7 +543,7 @@ function block_render_one(array $b): string {
             $align = ($b['align'] ?? 'left') === 'center' ? ' class="ta-center"' : '';
             return "<h{$level}{$align}>" . e((string)($b['text'] ?? '')) . "</h{$level}>";
         case 'text':
-            return '<div class="prose">' . (string)($b['html'] ?? '') . '</div>';
+            return '<div class="prose">' . sanitize_html((string)($b['html'] ?? '')) . '</div>';
         case 'image':
             $url = (string)($b['url'] ?? '');
             if ($url === '') return '';
@@ -432,7 +563,7 @@ function block_render_one(array $b): string {
             $img = trim((string)($b['image'] ?? ''));
             $side = ($b['image_side'] ?? 'left') === 'right' ? ' image-right' : '';
             $imgHtml = $img !== '' ? '<img src="' . e(base_url($img)) . '" alt="" loading="lazy">' : '';
-            return "<div class=\"cols{$side}\"><div class=\"col-media\">{$imgHtml}</div><div class=\"col-text prose\">" . (string)($b['html'] ?? '') . '</div></div>';
+            return "<div class=\"cols{$side}\"><div class=\"col-media\">{$imgHtml}</div><div class=\"col-text prose\">" . sanitize_html((string)($b['html'] ?? '')) . '</div></div>';
         case 'gallery':
             $images = (array)($b['images'] ?? []);
             if (!$images) return '';
@@ -504,7 +635,7 @@ HTML;
             $size = in_array($b['size'] ?? '', ['sm', 'md', 'lg'], true) ? $b['size'] : 'md';
             return "<div class=\"spacer-{$size}\"></div>";
         case 'html':
-            return (string)($b['code'] ?? '');
+            return sanitize_html((string)($b['code'] ?? ''));
         default:
             return '';
     }

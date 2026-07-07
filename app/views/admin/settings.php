@@ -37,6 +37,7 @@
             </div>
         </section>
 
+        <?php if (is_superadmin_role($user['role'] ?? null)): ?>
         <section class="panel side-panel settings-section">
             <h3>Kódbeszúrás</h3>
             <label class="field">
@@ -49,6 +50,7 @@
             </label>
             <p class="muted settings-note">A kódbeszúrás nyers HTML-ként kerül a nyilvános oldalakra — csak megbízható kódot illessz be.</p>
         </section>
+        <?php endif; ?>
         </div>
 
         <div class="settings-secondary">
@@ -65,6 +67,31 @@
             <label class="field">
                 <span>Meta leírás <em class="muted">(keresőmotoroknak)</em></span>
                 <textarea class="input" name="description" rows="2"><?= e(setting('description')) ?></textarea>
+            </label>
+        </section>
+
+        <section class="panel side-panel settings-section">
+            <h3>SEO alapok</h3>
+            <label class="field">
+                <span>Főoldal SEO cím <em class="muted">(max. kb. 70 karakter)</em></span>
+                <input class="input" type="text" name="seo_home_title" maxlength="70" value="<?= e(setting('seo_home_title', setting('site_name'))) ?>">
+            </label>
+            <label class="field">
+                <span>Robots alapértelmezés</span>
+                <?php $robots = setting('seo_robots', 'index,follow'); ?>
+                <select class="input" name="seo_robots">
+                    <?php foreach (['index,follow', 'noindex,follow', 'index,nofollow', 'noindex,nofollow'] as $opt): ?>
+                    <option value="<?= e($opt) ?>" <?= $robots === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label class="field">
+                <span>Alap OG kép <em class="muted">(uploads/... vagy teljes URL)</em></span>
+                <input class="input" type="text" name="default_og_image" value="<?= e(setting('default_og_image')) ?>">
+            </label>
+            <label class="field">
+                <span>Twitter/X azonosító <em class="muted">(pl. @markanev)</em></span>
+                <input class="input" type="text" name="twitter_site" value="<?= e(setting('twitter_site')) ?>">
             </label>
         </section>
 

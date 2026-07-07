@@ -3,6 +3,7 @@ storage/*.sqlite
 storage/*.zip
 storage/*.sqlite-wal
 storage/*.sqlite-shm
+storage/initial-admin.txt
 
 # Feltöltött média
 uploads/

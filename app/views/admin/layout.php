@@ -8,7 +8,7 @@ $nav = [
     ['admin/media',      'Médiatár',    'M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6M8.5 9a1 1 0 1 0 0-.01'],
 ];
 if (is_admin_role($user['role'] ?? null)) {
-    $nav[] = ['admin/templates', 'Sablonok', 'M12 22a10 10 0 1 1 10-10c0 1.8-1.2 3-3 3h-2.5a2.5 2.5 0 0 0-1.9 4.1c.6.8.1 2.9-2.6 2.9zM7.5 11a1 1 0 1 0 0-.01M12 7.5a1 1 0 1 0 0-.01M16.5 11a1 1 0 1 0 0-.01'];
+    $nav[] = ['admin/templates', 'Stílusok', 'M12 22a10 10 0 1 1 10-10c0 1.8-1.2 3-3 3h-2.5a2.5 2.5 0 0 0-1.9 4.1c.6.8.1 2.9-2.6 2.9zM7.5 11a1 1 0 1 0 0-.01M12 7.5a1 1 0 1 0 0-.01M16.5 11a1 1 0 1 0 0-.01'];
     $nav[] = ['admin/redirects', 'Átirányítások', 'M15 14l5-5-5-5M20 9H9a5 5 0 0 0-5 5v6'];
     $nav[] = ['admin/users',    'Felhasználók', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'];
     $nav[] = ['admin/settings', 'Beállítások',  'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'];
@@ -34,7 +34,7 @@ if ($base && str_starts_with($currentPath, $base)) $currentPath = trim(substr($c
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>?v=5">
+<link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>?v=7">
 </head>
 <body>
 <div class="admin-shell">

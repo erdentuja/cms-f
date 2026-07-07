@@ -110,17 +110,19 @@ function admin_post_save(): void {
     $data = [
         $title, $slug, trim((string)($_POST['excerpt'] ?? '')), (string)($_POST['content'] ?? ''),
         trim((string)($_POST['featured_image'] ?? '')), $catId, $status, $builder, $blocks, $sidebar, $sidebarSticky,
+        ...seo_fields_from_post(),
     ];
 
     if ($id) {
         $st = db()->prepare("UPDATE posts SET title=?, slug=?, excerpt=?, content=?, featured_image=?, category_id=?, status=?, builder=?, blocks=?, sidebar=?, sidebar_sticky=?,
+                             seo_title=?, seo_description=?, seo_image=?, seo_canonical=?, seo_robots=?,
                              updated_at=datetime('now','localtime'),
                              published_at=CASE WHEN ?='published' AND published_at IS NULL THEN datetime('now','localtime') ELSE published_at END
                              WHERE id=?");
         $st->execute([...$data, $status, $id]);
     } else {
-        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, builder, blocks, sidebar, sidebar_sticky, author_id, published_at)
-                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
+        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, builder, blocks, sidebar, sidebar_sticky, seo_title, seo_description, seo_image, seo_canonical, seo_robots, author_id, published_at)
+                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
         $st->execute([...$data, $user['id'], $status]);
         $id = (int)db()->lastInsertId();
     }
@@ -149,7 +151,7 @@ function admin_post_preview(): void {
             'cat_name' => '', 'cat_slug' => '', 'cat_color' => '',
             'author' => $user['name'] ?? '', 'published_at' => date('Y-m-d H:i:s'),
         ],
-        'blocks' => $blocks,
+        'blocksHtml' => blocks_render($blocks),
         'sidebar' => $sidebar,
         'sidebarSticky' => $sidebarSticky,
         'sidebarContent' => $sidebarContent,
@@ -201,13 +203,13 @@ function admin_page_save(): void {
     $data = [
         $title, $slug, (string)($_POST['content'] ?? ''),
         in_array($_POST['status'] ?? '', ['published', 'draft'], true) ? $_POST['status'] : 'published',
-        $builder, $blocks,
+        $builder, $blocks, ...seo_fields_from_post(),
     ];
     if ($id) {
-        $st = db()->prepare("UPDATE pages SET title=?, slug=?, content=?, status=?, builder=?, blocks=?, updated_at=datetime('now','localtime') WHERE id=?");
+        $st = db()->prepare("UPDATE pages SET title=?, slug=?, content=?, status=?, builder=?, blocks=?, seo_title=?, seo_description=?, seo_image=?, seo_canonical=?, seo_robots=?, updated_at=datetime('now','localtime') WHERE id=?");
         $st->execute([...$data, $id]);
     } else {
-        $st = db()->prepare('INSERT INTO pages (title, slug, content, status, builder, blocks) VALUES (?,?,?,?,?,?)');
+        $st = db()->prepare('INSERT INTO pages (title, slug, content, status, builder, blocks, seo_title, seo_description, seo_image, seo_canonical, seo_robots) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
         $st->execute($data);
         $id = (int)db()->lastInsertId();
     }
@@ -226,7 +228,7 @@ function admin_page_preview(): void {
     front_render('page', [
         'title' => $title,
         'page' => ['title' => $title, 'builder' => 1, 'content' => ''],
-        'blocks' => $blocks,
+        'blocksHtml' => blocks_render($blocks),
         'preview' => true,
     ]);
 }
@@ -257,10 +259,13 @@ function admin_category_save(): void {
     $slug = unique_slug(db(), 'categories', slugify($name), $id);
     $color = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['color'] ?? '') ? $_POST['color'] : '#6366f1';
     $desc = trim((string)($_POST['description'] ?? ''));
+    $seo = seo_fields_from_post();
     if ($id) {
-        db()->prepare('UPDATE categories SET name=?, slug=?, description=?, color=? WHERE id=?')->execute([$name, $slug, $desc, $color, $id]);
+        db()->prepare('UPDATE categories SET name=?, slug=?, description=?, color=?, seo_title=?, seo_description=?, seo_image=?, seo_canonical=?, seo_robots=? WHERE id=?')
+            ->execute([$name, $slug, $desc, $color, ...$seo, $id]);
     } else {
-        db()->prepare('INSERT INTO categories (name, slug, description, color) VALUES (?,?,?,?)')->execute([$name, $slug, $desc, $color]);
+        db()->prepare('INSERT INTO categories (name, slug, description, color, seo_title, seo_description, seo_image, seo_canonical, seo_robots) VALUES (?,?,?,?,?,?,?,?,?)')
+            ->execute([$name, $slug, $desc, $color, ...$seo]);
     }
     flash_set('success', 'Kategória mentve.');
     redirect('admin/categories');
@@ -335,7 +340,7 @@ function admin_menu_reorder(): void {
 
 /** Hol szerepel az egyes médiafájlok? [media_id => [['type','id','title','where'], …]] */
 function media_usages(array $items): array {
-    $posts = db()->query('SELECT id, title, content, featured_image FROM posts')->fetchAll();
+    $posts = db()->query('SELECT id, title, content, featured_image, blocks FROM posts')->fetchAll();
     $pages = db()->query('SELECT id, title, content, blocks FROM pages')->fetchAll();
     $map = [];
     foreach ($items as $m) {
@@ -346,6 +351,8 @@ function media_usages(array $items): array {
             $where = [];
             if ($p['featured_image'] === $needle) $where[] = 'kiemelt kép';
             if ($p['content'] && str_contains($p['content'], $needle)) $where[] = 'tartalom';
+            $blocks = $p['blocks'] ?? '';
+            if ($blocks && (str_contains($blocks, $needle) || str_contains($blocks, $jsonNeedle))) $where[] = 'blokk';
             if ($where) $u[] = ['type' => 'post', 'id' => (int)$p['id'], 'title' => $p['title'], 'where' => implode(', ', $where)];
         }
         foreach ($pages as $p) {
@@ -379,7 +386,7 @@ function admin_media_orphans_delete(): void {
     foreach ($items as $m) {
         if (!empty($usages[(int)$m['id']])) continue;
         foreach ([$m['path'], $m['thumb']] as $p) {
-            if ($p && is_file(APP_ROOT . '/' . $p)) @unlink(APP_ROOT . '/' . $p);
+            media_unlink_upload((string)$p);
         }
         db()->prepare('DELETE FROM media WHERE id=?')->execute([(int)$m['id']]);
         $n++;
@@ -410,7 +417,7 @@ function admin_media_upload(): void {
     $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']) ?: '';
     $allowed = [
         'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif',
-        'image/webp' => 'webp', 'image/svg+xml' => 'svg', 'application/pdf' => 'pdf',
+        'image/webp' => 'webp', 'application/pdf' => 'pdf',
     ];
     if (!isset($allowed[$mime])) json_out(['error' => 'Nem támogatott fájltípus: ' . $mime], 400);
 
@@ -423,7 +430,7 @@ function admin_media_upload(): void {
     if (!move_uploaded_file($f['tmp_name'], "$abs/$name")) json_out(['error' => 'A fájl mentése sikertelen.'], 500);
 
     $w = $h = 0; $thumb = '';
-    if (str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml') {
+    if (str_starts_with($mime, 'image/')) {
         [$w, $h] = getimagesize("$abs/$name") ?: [0, 0];
         $thumb = media_make_thumb("$abs/$name", $mime, $dir, $name);
     }
@@ -475,7 +482,7 @@ function admin_media_delete(): void {
     $st->execute([$id]);
     if ($m = $st->fetch()) {
         foreach ([$m['path'], $m['thumb']] as $p) {
-            if ($p && is_file(APP_ROOT . '/' . $p)) @unlink(APP_ROOT . '/' . $p);
+            media_unlink_upload((string)$p);
         }
         db()->prepare('DELETE FROM media WHERE id=?')->execute([$id]);
     }
@@ -484,14 +491,25 @@ function admin_media_delete(): void {
     redirect('admin/media');
 }
 
-/* ---------- Templates ---------- */
+function media_unlink_upload(string $path): void {
+    $path = trim(str_replace('\\', '/', $path));
+    if ($path === '' || !str_starts_with($path, 'uploads/') || str_contains($path, '..')) return;
+    $base = realpath(APP_ROOT . '/uploads');
+    $file = realpath(APP_ROOT . '/' . $path);
+    if (!$base || !$file || !is_file($file)) return;
+    $base = rtrim(str_replace('\\', '/', $base), '/') . '/';
+    $fileNorm = str_replace('\\', '/', $file);
+    if (str_starts_with($fileNorm, $base)) @unlink($file);
+}
+
+/* ---------- Styles ---------- */
 
 function admin_templates(): void {
     require_admin();
     $tpls = db()->query('SELECT * FROM templates ORDER BY id')->fetchAll();
     foreach ($tpls as &$t) $t['tpl'] = template_sanitize(json_decode($t['data'], true) ?: []);
     admin_render('templates', [
-        'title' => 'Sablonok',
+        'title' => 'Stílusok',
         'tpls' => $tpls,
         'activeId' => (int)setting('active_template'),
     ]);
@@ -502,14 +520,14 @@ function admin_template_save(): void {
     csrf_verify();
     $id = (int)($_POST['id'] ?? 0);
     $name = trim((string)($_POST['name'] ?? ''));
-    if ($name === '') { flash_set('error', 'A sablon nevének megadása kötelező.'); redirect('admin/templates'); }
+    if ($name === '') { flash_set('error', 'A stílus nevének megadása kötelező.'); redirect('admin/templates'); }
     $data = json_encode(template_sanitize($_POST));
     if ($id) {
         db()->prepare('UPDATE templates SET name=?, data=? WHERE id=?')->execute([$name, $data, $id]);
     } else {
         db()->prepare('INSERT INTO templates (name, data) VALUES (?,?)')->execute([$name, $data]);
     }
-    flash_set('success', 'Sablon mentve.');
+    flash_set('success', 'Stílus mentve.');
     redirect('admin/templates');
 }
 
@@ -522,7 +540,7 @@ function admin_template_activate(): void {
     if ($name = $st->fetchColumn()) {
         db()->prepare("INSERT INTO settings (key, value) VALUES ('active_template',?)
                        ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute([(string)$id]);
-        flash_set('success', "A(z) „{$name}” sablon mostantól aktív.");
+        flash_set('success', "A(z) „{$name}” stílus mostantól aktív.");
     }
     redirect('admin/templates');
 }
@@ -532,11 +550,11 @@ function admin_template_delete(): void {
     csrf_verify();
     $id = (int)($_POST['id'] ?? 0);
     if ($id === (int)setting('active_template')) {
-        flash_set('error', 'Az aktív sablon nem törölhető — előbb aktiválj egy másikat.');
+        flash_set('error', 'Az aktív stílus nem törölhető — előbb aktiválj egy másikat.');
         redirect('admin/templates');
     }
     db()->prepare('DELETE FROM templates WHERE id=?')->execute([$id]);
-    flash_set('success', 'Sablon törölve.');
+    flash_set('success', 'Stílus törölve.');
     redirect('admin/templates');
 }
 
@@ -545,15 +563,16 @@ function admin_template_export(string $id): void {
     $st = db()->prepare('SELECT * FROM templates WHERE id=?');
     $st->execute([(int)$id]);
     $t = $st->fetch();
-    if (!$t) { http_response_code(404); exit('A sablon nem található.'); }
+    if (!$t) { http_response_code(404); exit('A stílus nem található.'); }
     $payload = [
         'aurora_template' => 1,
+        'aurora_style' => 1,
         'name' => $t['name'],
         'data' => template_sanitize(json_decode($t['data'], true) ?: []),
         'exported_at' => date('c'),
     ];
     header('Content-Type: application/json; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . slugify($t['name']) . '-sablon.json"');
+    header('Content-Disposition: attachment; filename="' . slugify($t['name']) . '-stilus.json"');
     echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -566,19 +585,19 @@ function admin_template_import(): void {
         redirect('admin/templates');
     }
     if ($_FILES['file']['size'] > 64 * 1024) {
-        flash_set('error', 'A sablonfájl túl nagy.');
+        flash_set('error', 'A stílusfájl túl nagy.');
         redirect('admin/templates');
     }
     $json = json_decode((string)file_get_contents($_FILES['file']['tmp_name']), true);
-    if (!is_array($json) || empty($json['aurora_template']) || !is_array($json['data'] ?? null)) {
-        flash_set('error', 'Érvénytelen sablonfájl — Aurora CMS sablon JSON-t tölts fel.');
+    if (!is_array($json) || (empty($json['aurora_style']) && empty($json['aurora_template'])) || !is_array($json['data'] ?? null)) {
+        flash_set('error', 'Érvénytelen stílusfájl — Aurora CMS stílus JSON-t tölts fel.');
         redirect('admin/templates');
     }
-    $name = trim((string)($json['name'] ?? '')) ?: 'Importált sablon';
+    $name = trim((string)($json['name'] ?? '')) ?: 'Importált stílus';
     $name = mb_substr($name, 0, 60);
     db()->prepare('INSERT INTO templates (name, data) VALUES (?,?)')
         ->execute([$name . ' (importált)', json_encode(template_sanitize($json['data']))]);
-    flash_set('success', "A(z) „{$name}” sablon importálva.");
+    flash_set('success', "A(z) „{$name}” stílus importálva.");
     redirect('admin/templates');
 }
 
@@ -608,6 +627,10 @@ function admin_plugin_export(string $slug): void {
     require_superadmin();
     try {
         $slug = plugin_resolve_slug($slug);
+        $manifest = plugin_manifest(plugins_dir() . '/' . $slug . '/plugin.json') ?? [];
+        $version = trim((string)($manifest['version'] ?? ''));
+        $versionSuffix = $version !== '' ? '-v' . preg_replace('/[^A-Za-z0-9._-]+/', '-', $version) : '';
+        $downloadName = $slug . $versionSuffix . '.zip';
         $tmp = APP_ROOT . '/storage/' . $slug . '-export-' . bin2hex(random_bytes(4)) . '.zip';
         zip_create_from_dir(plugins_dir() . '/' . $slug, $tmp, $slug);
     } catch (\Throwable $e) {
@@ -617,7 +640,7 @@ function admin_plugin_export(string $slug): void {
 
     while (ob_get_level()) ob_end_clean();
     header('Content-Type: application/zip');
-    header('Content-Disposition: attachment; filename="' . $slug . '.zip"');
+    header('Content-Disposition: attachment; filename="' . $downloadName . '"');
     header('Content-Length: ' . filesize($tmp));
     header('X-Content-Type-Options: nosniff');
     readfile($tmp);
@@ -670,6 +693,11 @@ function admin_plugin_upload(): void {
     }
     if (!preg_match('/\.zip$/i', $f['name'])) {
         flash_set('error', 'Zip fájlt tölts fel.');
+        redirect('admin/plugins');
+    }
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']) ?: '';
+    if (!in_array($mime, ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'], true)) {
+        flash_set('error', 'Érvénytelen zip fájl.');
         redirect('admin/plugins');
     }
 
@@ -847,15 +875,21 @@ function admin_settings(): void {
 }
 
 function admin_settings_save(): void {
-    require_admin();
+    $user = require_admin();
     csrf_verify();
-    $keys = ['site_name', 'tagline', 'description', 'posts_per_page', 'footer_text', 'head_code', 'footer_code', 'post_sidebar', 'post_sidebar_sticky', 'post_sidebar_content'];
+    $keys = ['site_name', 'tagline', 'description', 'seo_home_title', 'seo_robots', 'default_og_image', 'twitter_site', 'posts_per_page', 'footer_text', 'head_code', 'footer_code', 'post_sidebar', 'post_sidebar_sticky', 'post_sidebar_content'];
+    if (!is_superadmin_role($user['role'] ?? null)) {
+        $keys = array_values(array_diff($keys, ['head_code', 'footer_code']));
+    }
     $st = db()->prepare('INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
     foreach ($keys as $k) {
         if (!isset($_POST[$k])) continue;
         $value = trim((string)$_POST[$k]);
         if ($k === 'post_sidebar') $value = in_array($value, ['none', 'left', 'right'], true) ? $value : 'none';
         if ($k === 'post_sidebar_sticky') $value = $value === '1' ? '1' : '0';
+        if ($k === 'seo_robots') $value = seo_robots_value($value);
+        if ($k === 'seo_home_title') $value = seo_text($value, 70);
+        if ($k === 'description') $value = seo_text($value, 160);
         $st->execute([$k, $value]);
     }
     flash_set('success', 'Beállítások mentve.');

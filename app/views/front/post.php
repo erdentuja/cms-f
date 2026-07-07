@@ -16,7 +16,7 @@
             <span class="dot">·</span>
             <time><?= hu_date($post['published_at']) ?></time>
             <span class="dot">·</span>
-            <span><?= reading_time(!empty($post['builder']) ? blocks_render($blocks) : $post['content']) ?> perc olvasás</span>
+            <span><?= reading_time(!empty($post['builder']) ? ($blocksHtml ?? '') : $post['content']) ?> perc olvasás</span>
         </div>
     </header>
 
@@ -27,10 +27,10 @@
     <?php endif; ?>
 
     <?php if (!empty($post['builder'])): ?>
-        <div class="blocks"><?= apply_filters('content', blocks_render($blocks)) ?></div>
+        <div class="blocks"><?= apply_filters('content', $blocksHtml ?? '') ?></div>
     <?php else: ?>
         <div class="container-narrow prose">
-            <?= apply_filters('content', $post['content']) ?>
+            <?= apply_filters('content', sanitize_html((string)$post['content'])) ?>
         </div>
     <?php endif; ?>
 </article>
@@ -38,7 +38,7 @@
 </div>
 <aside class="post-sidebar">
     <div class="post-sidebar-inner">
-        <?= apply_filters('content', $sidebarContent ?? sidebar_content_default()) ?>
+        <?= apply_filters('content', sanitize_html((string)($sidebarContent ?? sidebar_content_default()))) ?>
     </div>
 </aside>
 </div>

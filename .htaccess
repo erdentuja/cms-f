@@ -4,6 +4,8 @@ RewriteBase /
 
 # Protect app internals
 RewriteRule ^(app|storage)/ - [F,L]
+RewriteRule ^plugins/.*\.php$ - [F,L]
+RewriteRule ^uploads/.*\.(php[0-9]?|phtml|phar|cgi|pl|asp|aspx|jsp|sh|svg)$ - [F,L]
 
 # Serve existing files directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]

@@ -26,9 +26,13 @@ $previewAction = base_url('admin/posts/preview');
             <span>Kivonat <em class="muted">(a listákban és a keresőknek megjelenő rövid leírás)</em></span>
             <textarea class="input" name="excerpt" rows="3"><?= e($post['excerpt'] ?? '') ?></textarea>
         </label>
+
+        <div class="edit-lower panel-zone" data-panel-zone="bottom" aria-label="Szerkesztő alatti panelek">
+            <div class="panel-zone-empty">Ide húzhatod a jobb oldali paneleket</div>
+        </div>
     </div>
 
-    <aside class="edit-side">
+    <aside class="edit-side panel-zone" data-panel-zone="side">
         <div class="panel side-panel">
             <h3>Publikálás</h3>
             <label class="field">
@@ -59,6 +63,9 @@ $previewAction = base_url('admin/posts/preview');
                 <?php endforeach; ?>
             </select>
         </div>
+
+        <?php $seoRow = $post ?? []; $seoTitleHint = 'üresen a poszt címe'; $seoDescHint = 'üresen a kivonat'; $seoImageHint = 'üresen a kiemelt kép';
+        require __DIR__ . '/_seo-panel.php'; ?>
 
         <div class="panel side-panel">
             <h3>Oldalsáv <em class="muted side-hint-inline">felülbírálja a globálisat</em></h3>
@@ -132,3 +139,4 @@ $previewAction = base_url('admin/posts/preview');
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <?php require __DIR__ . '/_editor-scripts.php'; ?>
+<?php require __DIR__ . '/_panel-layout-scripts.php'; ?>

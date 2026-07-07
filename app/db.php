@@ -19,13 +19,50 @@ function db(): PDO {
     return $pdo;
 }
 
+function initial_admin_password(): string {
+    $password = bin2hex(random_bytes(9));
+    $file = APP_ROOT . '/storage/initial-admin.txt';
+    @file_put_contents($file, "Aurora CMS kezdeti szuperadmin\nE-mail: admin@cms.local\nJelszo: {$password}\n");
+    return $password;
+}
+
+/** Séma-verzió: minden migráció-módosításnál eggyel növelendő,
+ *  különben a lenti gyorskapu miatt az új migráció nem fut le. */
+const DB_SCHEMA_VERSION = '1';
+
 /** Idempotens migrációk már létező adatbázisokhoz */
 function db_migrate(PDO $db): void {
+    // Gyorskapu: a migráció minden kérésnél meghívódik, de csak sémaváltozáskor fusson le
+    try {
+        $v = $db->query("SELECT value FROM settings WHERE key='schema_version'")->fetchColumn();
+        if ($v === DB_SCHEMA_VERSION) return;
+    } catch (\Throwable) {
+        // settings tábla még nincs — teljes migráció következik
+    }
+
     if ($db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")->fetchColumn()) {
+        $db->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            ip TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        )");
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts ON login_attempts(email, ip, created_at)');
         $hasSuper = (int)$db->query("SELECT COUNT(*) FROM users WHERE role='superadmin'")->fetchColumn();
         if (!$hasSuper) {
             $firstAdmin = $db->query("SELECT id FROM users WHERE role='admin' ORDER BY id LIMIT 1")->fetchColumn();
             if ($firstAdmin) $db->prepare("UPDATE users SET role='superadmin' WHERE id=?")->execute([$firstAdmin]);
+        }
+        $st = $db->prepare("SELECT id, password FROM users WHERE email=? LIMIT 1");
+        $st->execute(['admin@cms.local']);
+        if ($u = $st->fetch()) {
+            if (password_verify('admin123', (string)$u['password'])) {
+                $db->prepare('UPDATE users SET password=? WHERE id=?')
+                   ->execute([password_hash(initial_admin_password(), PASSWORD_DEFAULT), $u['id']]);
+            }
+        }
+        if ($db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='posts'")->fetchColumn()) {
+            $db->exec("UPDATE posts SET content = REPLACE(content, '<code>admin@cms.local</code> / <code>admin123</code> — az első belépés után mindenképp változtasd meg a jelszót!', '<code>admin@cms.local</code> fiók kezdeti jelszava a szerveren, a <code>storage/initial-admin.txt</code> fájlban található.') WHERE content LIKE '%admin123%'");
         }
     }
 
@@ -36,10 +73,24 @@ function db_migrate(PDO $db): void {
     $postCols = array_column($db->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
     if (!in_array('sidebar', $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN sidebar TEXT NOT NULL DEFAULT ''");
     if (!in_array('sidebar_sticky', $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN sidebar_sticky TEXT NOT NULL DEFAULT ''");
-
-    $postCols = array_column($db->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
     if (!in_array('builder', $postCols, true)) $db->exec('ALTER TABLE posts ADD COLUMN builder INTEGER NOT NULL DEFAULT 0');
     if (!in_array('blocks', $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN blocks TEXT NOT NULL DEFAULT '[]'");
+    foreach (['seo_title', 'seo_description', 'seo_image', 'seo_canonical'] as $col) {
+        if (!in_array($col, $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN {$col} TEXT NOT NULL DEFAULT ''");
+    }
+    if (!in_array('seo_robots', $postCols, true)) $db->exec("ALTER TABLE posts ADD COLUMN seo_robots TEXT NOT NULL DEFAULT 'index,follow'");
+
+    $pageCols = array_column($db->query('PRAGMA table_info(pages)')->fetchAll(), 'name');
+    foreach (['seo_title', 'seo_description', 'seo_image', 'seo_canonical'] as $col) {
+        if (!in_array($col, $pageCols, true)) $db->exec("ALTER TABLE pages ADD COLUMN {$col} TEXT NOT NULL DEFAULT ''");
+    }
+    if (!in_array('seo_robots', $pageCols, true)) $db->exec("ALTER TABLE pages ADD COLUMN seo_robots TEXT NOT NULL DEFAULT 'index,follow'");
+
+    $catCols = array_column($db->query('PRAGMA table_info(categories)')->fetchAll(), 'name');
+    foreach (['seo_title', 'seo_description', 'seo_image', 'seo_canonical'] as $col) {
+        if (!in_array($col, $catCols, true)) $db->exec("ALTER TABLE categories ADD COLUMN {$col} TEXT NOT NULL DEFAULT ''");
+    }
+    if (!in_array('seo_robots', $catCols, true)) $db->exec("ALTER TABLE categories ADD COLUMN seo_robots TEXT NOT NULL DEFAULT 'index,follow'");
 
     $db->exec("CREATE TABLE IF NOT EXISTS menu_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,6 +138,9 @@ function db_migrate(PDO $db): void {
         foreach ($presets as [$name, $data]) $st->execute([$name, json_encode($data)]);
         $db->exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('active_template','1')");
     }
+
+    $db->prepare("INSERT INTO settings (key, value) VALUES ('schema_version',?)
+                  ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute([DB_SCHEMA_VERSION]);
 }
 
 function db_install(PDO $db): void {
@@ -104,7 +158,12 @@ function db_install(PDO $db): void {
         name TEXT NOT NULL,
         slug TEXT NOT NULL UNIQUE,
         description TEXT DEFAULT '',
-        color TEXT DEFAULT '#6366f1'
+        color TEXT DEFAULT '#6366f1',
+        seo_title TEXT NOT NULL DEFAULT '',
+        seo_description TEXT NOT NULL DEFAULT '',
+        seo_image TEXT NOT NULL DEFAULT '',
+        seo_canonical TEXT NOT NULL DEFAULT '',
+        seo_robots TEXT NOT NULL DEFAULT 'index,follow'
     );
     CREATE TABLE posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,6 +172,11 @@ function db_install(PDO $db): void {
         excerpt TEXT DEFAULT '',
         content TEXT DEFAULT '',
         featured_image TEXT DEFAULT '',
+        seo_title TEXT NOT NULL DEFAULT '',
+        seo_description TEXT NOT NULL DEFAULT '',
+        seo_image TEXT NOT NULL DEFAULT '',
+        seo_canonical TEXT NOT NULL DEFAULT '',
+        seo_robots TEXT NOT NULL DEFAULT 'index,follow',
         category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
         author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         status TEXT NOT NULL DEFAULT 'draft',
@@ -129,6 +193,11 @@ function db_install(PDO $db): void {
         slug TEXT NOT NULL UNIQUE,
         content TEXT DEFAULT '',
         status TEXT NOT NULL DEFAULT 'published',
+        seo_title TEXT NOT NULL DEFAULT '',
+        seo_description TEXT NOT NULL DEFAULT '',
+        seo_image TEXT NOT NULL DEFAULT '',
+        seo_canonical TEXT NOT NULL DEFAULT '',
+        seo_robots TEXT NOT NULL DEFAULT 'index,follow',
         show_in_menu INTEGER NOT NULL DEFAULT 1,
         menu_order INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
@@ -150,16 +219,27 @@ function db_install(PDO $db): void {
         key TEXT PRIMARY KEY,
         value TEXT DEFAULT ''
     );
+    CREATE TABLE login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        ip TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
     SQL);
 
     // Seed
+    $adminPassword = initial_admin_password();
     $db->prepare('INSERT INTO users (name, email, password, role) VALUES (?,?,?,?)')
-       ->execute(['Szuperadmin', 'admin@cms.local', password_hash('admin123', PASSWORD_DEFAULT), 'superadmin']);
+       ->execute(['Szuperadmin', 'admin@cms.local', password_hash($adminPassword, PASSWORD_DEFAULT), 'superadmin']);
 
     $settings = [
         'site_name' => 'Aurora CMS',
         'tagline' => 'Modern, gyors és gyönyörű tartalomkezelés',
         'description' => 'Egy villámgyors, modern CMS rendszer.',
+        'seo_home_title' => 'Aurora CMS',
+        'seo_robots' => 'index,follow',
+        'default_og_image' => '',
+        'twitter_site' => '',
         'posts_per_page' => '9',
         'post_sidebar_sticky' => '0',
         'post_sidebar_widgets' => json_encode(sidebar_widget_defaults()),
@@ -180,7 +260,7 @@ function db_install(PDO $db): void {
     $posts = [
         ['Üdvözöl az Aurora CMS!', 'udvozol-az-aurora-cms',
          'Ismerd meg az új tartalomkezelő rendszered: gyors, modern és gyönyörű.',
-         '<h2>Minden, amire szükséged van</h2><p>Az Aurora CMS egy villámgyors, modern tartalomkezelő rendszer. Posztok, oldalak, kategóriák, médiakezelő és felhasználókezelés — mindez egy letisztult, elegáns admin felületen.</p><h3>Első lépések</h3><p>Jelentkezz be az admin felületre a <strong>/admin</strong> címen, és kezdd el feltölteni a saját tartalmaidat. A kezdő belépési adatok: <code>admin@cms.local</code> / <code>admin123</code> — az első belépés után mindenképp változtasd meg a jelszót!</p><blockquote>A jó tartalom a jó eszközökkel kezdődik.</blockquote><p>Jó munkát kívánunk!</p>',
+         '<h2>Minden, amire szükséged van</h2><p>Az Aurora CMS egy villámgyors, modern tartalomkezelő rendszer. Posztok, oldalak, kategóriák, médiakezelő és felhasználókezelés — mindez egy letisztult, elegáns admin felületen.</p><h3>Első lépések</h3><p>Jelentkezz be az admin felületre a <strong>/admin</strong> címen, és kezdd el feltölteni a saját tartalmaidat. A friss telepítés kezdeti jelszava a szerveren, a <code>storage/initial-admin.txt</code> fájlban található.</p><blockquote>A jó tartalom a jó eszközökkel kezdődik.</blockquote><p>Jó munkát kívánunk!</p>',
          1, 'published'],
         ['A minimalista dizájn ereje', 'a-minimalista-dizajn-ereje',
          'Miért működik a kevesebb több elve a webes felületeken?',

@@ -147,44 +147,31 @@ function setFeatured(url) {
     document.getElementById('clearFeaturedBtn').hidden = false;
 }
 
-/* ---------- Szerkesztő-oldalsáv: WP-szerű mozgatható, összecsukható panelek ---------- */
+/* ---------- Szerkesztő-oldalsáv: összecsukható panelek ---------- */
+/* A panelek húzását/áthelyezését a _panel-layout-scripts.php végzi; ez a rész
+   csak az összecsukás gombot adja hozzá és a nyitott/zárt állapotot jegyzi meg. */
 (function () {
-    const side = document.querySelector('.edit-side');
-    if (!side) return;
-    // Kulcs szerkesztőnként (poszt/oldal), az id nélkül: a sorrend minden példányra érvényes
-    const storeKey = 'aurora-panels:' + location.pathname.replace(/\/(\d+|new)$/, '');
-    const idOf = p => (p.querySelector('h3')?.textContent || 'panel')
+    const form = document.getElementById('editForm');
+    if (!form) return;
+    const panels = [...form.querySelectorAll('.side-panel')];
+    if (!panels.length) return;
+
+    const storeKey = 'aurora-panels-closed:' + location.pathname.replace(/\/(\d+|new)$/, '');
+    const idOf = (p, i) => p.dataset.panelId || (p.querySelector('h3')?.textContent || 'panel-' + i)
         .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
-    const panels = () => [...side.querySelectorAll('.side-panel')];
 
-    let state = {};
-    try { state = JSON.parse(localStorage.getItem(storeKey)) || {}; } catch { /* sérült állapot: alapértelmezés */ }
-
-    if (Array.isArray(state.order)) {
-        state.order.forEach(id => {
-            const p = panels().find(x => idOf(x) === id);
-            if (p) side.appendChild(p);
-        });
-    }
+    let closed = [];
+    try { closed = JSON.parse(localStorage.getItem(storeKey)) || []; } catch { /* sérült állapot: alapértelmezés */ }
 
     function save() {
-        localStorage.setItem(storeKey, JSON.stringify({
-            order: panels().map(idOf),
-            closed: panels().filter(p => p.classList.contains('closed')).map(idOf),
-        }));
+        localStorage.setItem(storeKey, JSON.stringify(panels.filter(p => p.classList.contains('closed')).map(idOf)));
     }
 
-    panels().forEach(p => {
+    panels.forEach((p, i) => {
         const h = p.querySelector('h3');
         if (!h) return;
         p.classList.add('sortable-panel');
-        if ((state.closed || []).includes(idOf(p))) p.classList.add('closed');
-
-        const grip = document.createElement('span');
-        grip.className = 'panel-grip';
-        grip.title = 'Húzd a panel áthelyezéséhez';
-        grip.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5.5" r="1.7"/><circle cx="15" cy="5.5" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18.5" r="1.7"/><circle cx="15" cy="18.5" r="1.7"/></svg>';
-        h.prepend(grip);
+        if (closed.includes(idOf(p, i))) p.classList.add('closed');
 
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -193,22 +180,6 @@ function setFeatured(url) {
         btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
         btn.addEventListener('click', () => { p.classList.toggle('closed'); save(); });
         h.appendChild(btn);
-
-        h.draggable = true;
-        h.addEventListener('dragstart', e => {
-            p.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        });
-        h.addEventListener('dragend', () => { p.classList.remove('dragging'); save(); });
-    });
-
-    side.addEventListener('dragover', e => {
-        const dragging = side.querySelector('.side-panel.dragging');
-        if (!dragging) return;
-        e.preventDefault();
-        const after = panels().filter(p => p !== dragging)
-            .find(p => e.clientY < p.getBoundingClientRect().top + p.getBoundingClientRect().height / 2);
-        after ? side.insertBefore(dragging, after) : side.appendChild(dragging);
     });
 })();
 

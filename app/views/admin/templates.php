@@ -1,14 +1,14 @@
 <link href="<?= e('https://fonts.googleapis.com/css2?' . implode('&', array_map(fn($f) => 'family=' . str_replace(' ', '+', $f) . ':wght@700', template_fonts())) . '&display=swap') ?>" rel="stylesheet">
 <header class="page-head">
     <div>
-        <h1>Sablonok</h1>
-        <p class="muted">Dizájnsablonok — színek, betűtípusok, formák. Exportálhatod és importálhatod őket JSON-ként.</p>
+        <h1>Stílusok</h1>
+        <p class="muted">Vizuális stílusok — színek, betűtípusok, formák. Exportálhatod és importálhatod őket JSON-ként.</p>
     </div>
     <form method="post" action="<?= base_url('admin/templates/import') ?>" enctype="multipart/form-data" id="importForm">
         <?= csrf_field() ?>
         <label class="btn btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            Sablon importálása
+            Stílus importálása
             <input type="file" name="file" accept="application/json,.json" hidden onchange="document.getElementById('importForm').submit()">
         </label>
     </form>
@@ -50,7 +50,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 10l-5-5-5 5M12 5v12"/></svg>
                 </a>
                 <?php if (!$isActive): ?>
-                <form method="post" action="<?= base_url('admin/templates/delete') ?>" data-confirm="Törlöd ezt a sablont?">
+                <form method="post" action="<?= base_url('admin/templates/delete') ?>" data-confirm="Törlöd ezt a stílust?">
                     <?= csrf_field() ?>
                     <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
                     <button class="icon-btn danger" type="submit" title="Törlés">
@@ -65,7 +65,7 @@
 </div>
 
 <div class="panel side-panel tpl-form-panel">
-    <h3 id="tplFormTitle">Új sablon</h3>
+    <h3 id="tplFormTitle">Új stílus</h3>
     <form method="post" action="<?= base_url('admin/templates/save') ?>" id="tplForm">
         <?= csrf_field() ?>
         <input type="hidden" name="id" id="tId" value="0">
@@ -129,7 +129,7 @@ function fillTplForm(t) {
     document.getElementById('tFontBody').value = t.font_body;
 }
 function editTemplate(t) {
-    document.getElementById('tplFormTitle').textContent = 'Sablon szerkesztése: ' + t.name;
+    document.getElementById('tplFormTitle').textContent = 'Stílus szerkesztése: ' + t.name;
     document.getElementById('tId').value = t.id;
     document.getElementById('tName').value = t.name;
     fillTplForm(t);
@@ -137,7 +137,7 @@ function editTemplate(t) {
     document.querySelector('.tpl-form-panel').scrollIntoView({behavior: 'smooth'});
 }
 function duplicateTemplate(t) {
-    document.getElementById('tplFormTitle').textContent = 'Új sablon (másolat)';
+    document.getElementById('tplFormTitle').textContent = 'Új stílus (másolat)';
     document.getElementById('tId').value = 0;
     document.getElementById('tName').value = t.name + ' másolat';
     fillTplForm(t);
@@ -145,7 +145,7 @@ function duplicateTemplate(t) {
     document.querySelector('.tpl-form-panel').scrollIntoView({behavior: 'smooth'});
 }
 function resetTplForm() {
-    document.getElementById('tplFormTitle').textContent = 'Új sablon';
+    document.getElementById('tplFormTitle').textContent = 'Új stílus';
     document.getElementById('tplForm').reset();
     document.getElementById('tId').value = 0;
     document.getElementById('radiusOut').textContent = document.getElementById('tRadius').value;

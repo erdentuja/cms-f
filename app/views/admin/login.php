@@ -31,7 +31,6 @@
         </label>
         <button class="btn btn-primary btn-block" type="submit">Bejelentkezés</button>
     </form>
-    <p class="login-hint">Alapértelmezett: admin@cms.local / admin123</p>
 </div>
 </body>
 </html>

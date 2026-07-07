@@ -263,6 +263,15 @@ function zip_create_from_dir(string $sourceDir, string $zipFile, string $rootNam
 /** Mappa rekurzív törlése (csak a plugins könyvtáron belül használjuk) */
 function rrmdir(string $dir): void {
     if (!is_dir($dir)) return;
+    $real = realpath($dir);
+    $plugins = realpath(plugins_dir());
+    $storage = realpath(APP_ROOT . '/storage');
+    $norm = $real ? str_replace('\\', '/', $real) : '';
+    $pluginBase = $plugins ? rtrim(str_replace('\\', '/', $plugins), '/') . '/' : '';
+    $storageBase = $storage ? rtrim(str_replace('\\', '/', $storage), '/') . '/plugin-tmp-' : '';
+    if ($norm === '' || (($pluginBase === '' || !str_starts_with($norm . '/', $pluginBase)) && ($storageBase === '' || !str_starts_with($norm, $storageBase)))) {
+        throw new RuntimeException('Veszélyes törlési cél blokkolva.');
+    }
     foreach (new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
         RecursiveIteratorIterator::CHILD_FIRST
