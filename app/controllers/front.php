@@ -64,8 +64,9 @@ function front_post(string $slug): void {
     $st->execute([$post['id'], $post['category_id'], $post['category_id']]);
     $blocks = $post['builder'] ? (json_decode($post['blocks'], true) ?: []) : [];
 
-    // Oldalsáv (beállítás: post_sidebar = left|right|none)
-    $sidebar = setting('post_sidebar', 'none');
+    // Oldalsáv: a poszt saját beállítása felülírja a globálisat (post_sidebar)
+    $sidebar = trim((string)($post['sidebar'] ?? ''));
+    if (!in_array($sidebar, ['left', 'right', 'none'], true)) $sidebar = setting('post_sidebar', 'none');
     if (!in_array($sidebar, ['left', 'right'], true)) $sidebar = 'none';
     $sideData = null;
     if ($sidebar !== 'none') {

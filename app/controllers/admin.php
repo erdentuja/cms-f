@@ -104,21 +104,22 @@ function admin_post_save(): void {
     $builder = !empty($_POST['builder']) ? 1 : 0;
     $blocksJson = json_decode((string)($_POST['blocks'] ?? '[]'), true);
     $blocks = json_encode(blocks_sanitize(is_array($blocksJson) ? $blocksJson : []));
+    $sidebar = in_array($_POST['sidebar'] ?? '', ['none', 'left', 'right'], true) ? $_POST['sidebar'] : '';
 
     $data = [
         $title, $slug, trim((string)($_POST['excerpt'] ?? '')), (string)($_POST['content'] ?? ''),
-        trim((string)($_POST['featured_image'] ?? '')), $catId, $status, $builder, $blocks,
+        trim((string)($_POST['featured_image'] ?? '')), $catId, $status, $builder, $blocks, $sidebar,
     ];
 
     if ($id) {
-        $st = db()->prepare("UPDATE posts SET title=?, slug=?, excerpt=?, content=?, featured_image=?, category_id=?, status=?, builder=?, blocks=?,
+        $st = db()->prepare("UPDATE posts SET title=?, slug=?, excerpt=?, content=?, featured_image=?, category_id=?, status=?, builder=?, blocks=?, sidebar=?,
                              updated_at=datetime('now','localtime'),
                              published_at=CASE WHEN ?='published' AND published_at IS NULL THEN datetime('now','localtime') ELSE published_at END
                              WHERE id=?");
         $st->execute([...$data, $status, $id]);
     } else {
-        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, builder, blocks, author_id, published_at)
-                             VALUES (?,?,?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
+        $st = db()->prepare("INSERT INTO posts (title, slug, excerpt, content, featured_image, category_id, status, builder, blocks, sidebar, author_id, published_at)
+                             VALUES (?,?,?,?,?,?,?,?,?,?,?, CASE WHEN ?='published' THEN datetime('now','localtime') ELSE NULL END)");
         $st->execute([...$data, $user['id'], $status]);
         $id = (int)db()->lastInsertId();
     }
