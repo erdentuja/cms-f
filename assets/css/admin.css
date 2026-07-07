@@ -73,6 +73,20 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.015em; }
     box-shadow: inset 2px 0 0 var(--accent);
 }
 .sidebar-nav a.active svg { opacity: 1; color: #a99cff; }
+.nav-divider {
+    margin: 12px 12px 3px; font-size: .66rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: rgb(244 63 142 / .8);
+}
+.sidebar-nav a.plugin-item { color: #d5bcc9; }
+.sidebar-nav a.plugin-item svg { color: #f43f8e; opacity: .85; }
+.sidebar-nav a.plugin-item:hover { background: rgb(244 63 142 / .08); color: #fff; }
+.sidebar-nav a.plugin-item.active {
+    background: linear-gradient(90deg, rgb(244 63 142 / .26), rgb(244 63 142 / .08));
+    color: #fff;
+    box-shadow: inset 2px 0 0 #f43f8e;
+}
+.sidebar-nav a.plugin-item.active svg { opacity: 1; color: #ff8fc0; }
 .sidebar-footer { padding: 14px; border-top: 1px solid rgb(255 255 255 / .07); }
 .view-site {
     display: flex; align-items: center; gap: 10px;

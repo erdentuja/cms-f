@@ -14,7 +14,11 @@ if (($user['role'] ?? '') === 'admin') {
     $nav[] = ['admin/users',    'Felhasználók', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'];
     $nav[] = ['admin/settings', 'Beállítások',  'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'];
 }
+// A filter által hozzáadott (bővítmény-) menüpontok elkülönítése
+$corePaths = array_column($nav, 0);
 $nav = apply_filters('admin_nav', $nav, $user);
+$coreItems = array_values(array_filter($nav, fn($it) => in_array($it[0], $corePaths, true)));
+$pluginItems = array_values(array_filter($nav, fn($it) => !in_array($it[0], $corePaths, true)));
 $currentPath = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $base = trim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
 if ($base && str_starts_with($currentPath, $base)) $currentPath = trim(substr($currentPath, strlen($base)), '/');
@@ -38,13 +42,23 @@ if ($base && str_starts_with($currentPath, $base)) $currentPath = trim(substr($c
             <span><?= e(setting('site_name')) ?></span>
         </a>
         <nav class="sidebar-nav">
-            <?php foreach ($nav as [$path, $label, $icon]):
+            <?php foreach ($coreItems as [$path, $label, $icon]):
                 $active = $path === 'admin' ? $currentPath === 'admin' : str_starts_with($currentPath, $path); ?>
             <a class="<?= $active ? 'active' : '' ?>" href="<?= base_url($path) ?>">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="<?= $icon ?>"/></svg>
                 <?= $label ?>
             </a>
             <?php endforeach; ?>
+            <?php if ($pluginItems): ?>
+            <span class="nav-divider">Bővítmények</span>
+            <?php foreach ($pluginItems as [$path, $label, $icon]):
+                $active = str_starts_with($currentPath, $path); ?>
+            <a class="plugin-item <?= $active ? 'active' : '' ?>" href="<?= base_url($path) ?>">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="<?= $icon ?>"/></svg>
+                <?= $label ?>
+            </a>
+            <?php endforeach; ?>
+            <?php endif; ?>
         </nav>
         <div class="sidebar-footer">
             <a class="view-site" href="<?= base_url('/') ?>" target="_blank">
