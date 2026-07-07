@@ -320,7 +320,8 @@ function media_usages(array $items): array {
             if ($blocks && (str_contains($blocks, $needle) || str_contains($blocks, $jsonNeedle))) $where[] = 'blokk';
             if ($where) $u[] = ['type' => 'page', 'id' => (int)$p['id'], 'title' => $p['title'], 'where' => implode(', ', $where)];
         }
-        $map[(int)$m['id']] = $u;
+        // Bővítmények is jelezhetik, hol használják a fájlt (pl. galériák)
+        $map[(int)$m['id']] = apply_filters('media_usage', $u, $m);
     }
     return $map;
 }

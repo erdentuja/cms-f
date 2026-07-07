@@ -53,8 +53,8 @@
                 <ul class="usage-list">
                     <?php foreach ($u as $x): ?>
                     <li>
-                        <a class="link" href="<?= base_url(($x['type'] === 'post' ? 'admin/posts/' : 'admin/pages/') . $x['id']) ?>"><?= e($x['title']) ?></a>
-                        <span class="muted">(<?= $x['type'] === 'post' ? 'poszt' : 'oldal' ?> — <?= e($x['where']) ?>)</span>
+                        <a class="link" href="<?= base_url($x['url'] ?? (($x['type'] === 'post' ? 'admin/posts/' : 'admin/pages/') . $x['id'])) ?>"><?= e($x['title']) ?></a>
+                        <span class="muted">(<?= e($x['kind'] ?? ($x['type'] === 'post' ? 'poszt' : 'oldal')) ?> — <?= e($x['where']) ?>)</span>
                     </li>
                     <?php endforeach; ?>
                 </ul>
