@@ -1,6 +1,6 @@
 {
     "name": "Galéria kezelő",
-    "description": "Névvel ellátott, újrafelhasználható galériák a médiatár képeiből. A kész galériát a [galeria id=N] beszúrókóddal teheted bármely oldal vagy poszt tartalmába, szöveg- vagy HTML-blokkba.",
+    "description": "Névvel ellátott, újrafelhasználható galériák a médiatár képeiből. A kész galériát a [galeria id=N] shortcode-dal teheted bármely oldal vagy poszt tartalmába, szöveg- vagy HTML-blokkba.",
     "version": "1.0",
     "author": "Aurora CMS"
 }

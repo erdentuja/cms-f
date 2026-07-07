@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-/* Galéria kezelő — névvel ellátott galériák a médiatárból, [galeria id=N] beszúrókóddal */
+/* Galéria kezelő — névvel ellátott galériák a médiatárból, [galeria id=N] shortcode-dal */
 
 db()->exec("CREATE TABLE IF NOT EXISTS galleries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +71,7 @@ function galeria_admin(): void {
 <header class="page-head">
     <div>
         <h1>Galériák</h1>
-        <p class="muted"><?= count($galleries) ?> galéria — beszúrás a <code>[galeria id=N]</code> kóddal</p>
+        <p class="muted"><?= count($galleries) ?> galéria — beszúrás a <code>[galeria id=N]</code> shortcode-dal</p>
     </div>
 </header>
 
@@ -79,7 +79,7 @@ function galeria_admin(): void {
     <div class="panel">
         <?php if ($galleries): ?>
         <table class="table">
-            <thead><tr><th>Galéria</th><th>Képek</th><th>Beszúrókód</th><th></th></tr></thead>
+            <thead><tr><th>Galéria</th><th>Képek</th><th>Shortcode</th><th></th></tr></thead>
             <tbody>
                 <?php foreach ($galleries as $g): $imgs = galeria_images_of($g['images']); ?>
                 <tr>
@@ -118,7 +118,7 @@ function galeria_admin(): void {
         <?php else: ?>
         <div class="empty-state">
             <p>Még nincs galéria.</p>
-            <p class="muted">Hozz létre egyet a jobb oldali űrlappal, majd illeszd be a <code>[galeria id=N]</code> kódot egy oldal vagy poszt tartalmába — akár az oldalépítő szöveg- vagy HTML-blokkjába is.</p>
+            <p class="muted">Hozz létre egyet a jobb oldali űrlappal, majd illeszd be a <code>[galeria id=N]</code> shortcode-ot egy oldal vagy poszt tartalmába — akár az oldalépítő szöveg- vagy HTML-blokkjába is.</p>
         </div>
         <?php endif; ?>
     </div>
@@ -247,7 +247,7 @@ function galeria_admin_save(): void {
         db()->prepare('INSERT INTO galleries (name, images) VALUES (?,?)')->execute([mb_substr($name, 0, 120), json_encode($imgs)]);
         $id = (int)db()->lastInsertId();
     }
-    flash_set('success', "Galéria mentve — beszúrókód: [galeria id={$id}]");
+    flash_set('success', "Galéria mentve — shortcode: [galeria id={$id}]");
     redirect('admin/galeriak');
 }
 
